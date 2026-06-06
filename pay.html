@@ -660,6 +660,95 @@ body{background:var(--color-bg)}
 }
 @keyframes menuItemIn{to{opacity:1;transform:translateY(0)}}
 
+/* ---- Fix 1: dish photo tap target ---- */
+.menu-item__thumb-btn{
+  flex-shrink:0;
+  display:block;
+  width:96px;height:96px;
+  border-radius:var(--radius-sm);
+  padding:0;border:none;background:none;cursor:pointer;
+  /* ensure min 44px tap target (already 96px) */
+}
+.menu-item__thumb-btn:focus-visible{
+  outline:2px solid var(--color-primary);
+  outline-offset:2px;
+}
+.menu-item__thumb-btn .menu-item__thumb{
+  width:100%;height:100%;
+  border-radius:var(--radius-sm);
+  object-fit:cover;
+  background:var(--color-surface-raised);
+  display:block;
+  /* subtle scale hint on hover */
+  transition:transform var(--duration-fast) var(--easing-standard),
+             opacity var(--duration-fast);
+}
+@media (hover:hover){
+  .menu-item__thumb-btn:hover .menu-item__thumb{transform:scale(1.04);opacity:0.92}
+}
+.menu-item__thumb-btn .menu-item__thumb[data-err]{display:none}
+
+/* ---- Fix 1: lightbox ---- */
+#menu-lightbox{
+  position:fixed;inset:0;z-index:500;
+  background:var(--color-overlay);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:var(--space-4);
+  /* hidden state */
+  opacity:0;pointer-events:none;
+  transition:opacity var(--duration-fast) var(--easing-standard);
+}
+#menu-lightbox.lb-open{
+  opacity:1;pointer-events:auto;
+}
+#menu-lightbox-img{
+  max-width:90vw;max-height:80vh;
+  width:auto;height:auto;
+  border-radius:var(--radius-lg);
+  object-fit:contain;
+  box-shadow:var(--shadow-xl);
+  display:block;
+  transform:scale(0.88);opacity:0;
+  transition:transform var(--duration-slow) var(--easing-spring),
+             opacity var(--duration-slow) var(--easing-decelerate);
+}
+#menu-lightbox.lb-open #menu-lightbox-img{
+  transform:scale(1);opacity:1;
+}
+#menu-lightbox-caption{
+  margin-top:var(--space-3);
+  font-size:15px;font-weight:500;color:#fff;
+  text-align:center;
+  transform:translateY(6px);opacity:0;
+  transition:transform var(--duration-slow) var(--easing-decelerate),
+             opacity var(--duration-slow) var(--easing-decelerate);
+  transition-delay:80ms;
+  max-width:80vw;
+}
+#menu-lightbox.lb-open #menu-lightbox-caption{
+  transform:translateY(0);opacity:1;
+}
+#menu-lightbox-close{
+  position:fixed;top:max(var(--space-4), env(safe-area-inset-top,var(--space-4)));
+  right:var(--space-4);
+  width:44px;height:44px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.15);
+  border:none;border-radius:var(--radius-full);
+  color:#fff;cursor:pointer;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  transition:background var(--duration-fast);
+}
+#menu-lightbox-close:hover{background:rgba(255,255,255,0.28)}
+#menu-lightbox-close:focus-visible{
+  outline:2px solid #fff;outline-offset:2px;
+}
+@media (prefers-reduced-motion:reduce){
+  #menu-lightbox,#menu-lightbox-img,#menu-lightbox-caption{transition:opacity 150ms ease}
+  #menu-lightbox-img{transform:none}
+  #menu-lightbox-caption{transform:none}
+}
+
 /* empty / error states */
 .menu-empty-state{
   display:flex;flex-direction:column;align-items:center;
@@ -994,6 +1083,19 @@ body{background:var(--color-bg)}
 
 <!-- ===== SHEET OVERLAY ===== -->
 <div id="sheet-overlay" class="sheet-overlay" role="presentation"></div>
+
+<!-- ===== MENU LIGHTBOX ===== -->
+<div id="menu-lightbox"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Dish photo"
+     aria-labelledby="menu-lightbox-caption">
+  <button id="menu-lightbox-close" aria-label="Close photo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <img id="menu-lightbox-img" src="" alt="" />
+  <p id="menu-lightbox-caption"></p>
+</div>
 
 <!-- ===== SPLIT CHOOSER SHEET (A2) ===== -->
 <div id="sheet-split" class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="split-title">
@@ -1807,6 +1909,16 @@ function renderMenu(categories, items){
       chip.setAttribute('data-cat-id', cat.id);
       chip.setAttribute('aria-label', 'Jump to ' + cat.name + ' section');
       chip.addEventListener('click', function(){
+        // immediately mark this chip active on tap
+        $$('.menu-cat-chip').forEach(function(c){
+          c.classList.remove('active');
+          c.setAttribute('aria-current','false');
+        });
+        chip.classList.add('active');
+        chip.setAttribute('aria-current','true');
+        // scroll chip into view within the horizontal nav
+        var nav = document.getElementById('menu-cat-nav');
+        if(nav) chip.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
         // scroll to section
         var sec = document.getElementById('menu-section-' + cat.id);
         if(sec){
@@ -1865,15 +1977,20 @@ function renderMenu(categories, items){
         // stagger entrance animation delay
         li.style.animationDelay = (idx * 40) + 'ms';
 
-        // thumbnail — prominent left image with graceful onerror
+        // thumbnail — tappable button wrapper for lightbox (Fix 1)
         var thumbHtml = '';
         if(item.photo_url){
-          thumbHtml = '<img class="menu-item__thumb"'
+          thumbHtml = '<button class="menu-item__thumb-btn"'
+            + ' aria-label="View photo of ' + MESA.esc(item.name) + '"'
+            + ' data-lightbox-src="' + MESA.esc(item.photo_url) + '"'
+            + ' data-lightbox-name="' + MESA.esc(item.name) + '">'
+            + '<img class="menu-item__thumb"'
             + ' src="' + MESA.esc(item.photo_url) + '"'
-            + ' alt="' + MESA.esc(item.name) + '"'
+            + ' alt=""'
             + ' loading="lazy"'
             + ' width="96" height="96"'
-            + ' onerror="this.setAttribute(\'data-err\',\'1\')">';
+            + ' onerror="this.setAttribute(\'data-err\',\'1\')">'
+            + '</button>';
         }
 
         // allergens as refined chips
@@ -1914,27 +2031,143 @@ function renderMenu(categories, items){
 
 function attachNavScrollSpy(activeCats){
   if(!activeCats.length) return;
-  var observer = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting){
-        var catId = entry.target.id.replace('menu-section-','');
-        $$('.menu-cat-chip').forEach(function(chip){
-          var isActive = chip.getAttribute('data-cat-id') === catId;
-          chip.classList.toggle('active', isActive);
-          chip.setAttribute('aria-current', isActive ? 'true' : 'false');
-          if(isActive){
-            chip.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'});
-          }
-        });
+
+  // The menu screen scrolls on the window (no overflow container).
+  // Brand-strip: 56px sticky at top:0; category nav: sticky at top:56px, ~52px tall.
+  // A section is "active" when its top edge is at or above the bottom of the sticky nav
+  // (i.e. offset <= stickyOffset). We pick the last section that satisfies this.
+  var STICKY_HEIGHT = 56 + 52; // brand-strip + cat-nav — approximate, recalculated on each call
+
+  function getStickyHeight(){
+    var brandStrip = document.querySelector('#screen-menu .brand-strip');
+    var catNav = document.getElementById('menu-cat-nav');
+    var bh = brandStrip ? brandStrip.getBoundingClientRect().height : 56;
+    var nh = (catNav && catNav.style.display !== 'none') ? catNav.getBoundingClientRect().height : 0;
+    return bh + nh;
+  }
+
+  function updateActiveChip(){
+    var sticky = getStickyHeight();
+    // threshold: a section is "past" the sticky nav if its top is above (sticky + small buffer)
+    var threshold = sticky + 8;
+
+    var currentCatId = activeCats[0].id; // fallback: first
+    for(var i = 0; i < activeCats.length; i++){
+      var sec = document.getElementById('menu-section-' + activeCats[i].id);
+      if(!sec) continue;
+      var rect = sec.getBoundingClientRect();
+      if(rect.top <= threshold){
+        currentCatId = activeCats[i].id;
+      }
+    }
+
+    var nav = document.getElementById('menu-cat-nav');
+    $$('.menu-cat-chip').forEach(function(chip){
+      var isActive = chip.getAttribute('data-cat-id') === String(currentCatId);
+      var wasActive = chip.classList.contains('active');
+      chip.classList.toggle('active', isActive);
+      chip.setAttribute('aria-current', isActive ? 'true' : 'false');
+      // scroll chip into view within the nav only when it newly becomes active
+      if(isActive && !wasActive && nav){
+        chip.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
       }
     });
-  },{rootMargin:'-56px 0px -60% 0px', threshold:0});
+  }
 
-  activeCats.forEach(function(cat){
-    var sec = document.getElementById('menu-section-' + cat.id);
-    if(sec) observer.observe(sec);
-  });
+  // Capture-phase scroll listener on document: catches scroll from whatever element
+  // actually scrolls (here <body> is the scroller, not window), and any nested scroller.
+  var _scrollHandler = function(){ updateActiveChip(); };
+  document.addEventListener('scroll', _scrollHandler, {passive:true, capture:true});
+  window.addEventListener('scroll', _scrollHandler, {passive:true});
+
+  // Run once immediately so initial state is correct
+  updateActiveChip();
+
+  // Clean up when leaving menu screen (avoid memory leak / stale listener)
+  var backBtn = document.getElementById('back-from-menu');
+  if(backBtn){
+    backBtn.addEventListener('click', function onBack(){
+      document.removeEventListener('scroll', _scrollHandler, {capture:true});
+      window.removeEventListener('scroll', _scrollHandler);
+      backBtn.removeEventListener('click', onBack);
+    }, {once:true});
+  }
 }
+
+// ---- Fix 1: lightbox ----
+(function(){
+  var lightbox = null;
+  var lbImg = null;
+  var lbCaption = null;
+  var lbClose = null;
+  var _triggerEl = null;
+  var _prevOverflow = '';
+
+  function initLightbox(){
+    lightbox   = document.getElementById('menu-lightbox');
+    lbImg      = document.getElementById('menu-lightbox-img');
+    lbCaption  = document.getElementById('menu-lightbox-caption');
+    lbClose    = document.getElementById('menu-lightbox-close');
+    if(!lightbox) return;
+
+    lbClose.addEventListener('click', closeLightbox);
+
+    // Backdrop tap closes (only direct click on the backdrop, not the image/caption)
+    lightbox.addEventListener('click', function(e){
+      if(e.target === lightbox) closeLightbox();
+    });
+
+    // Escape key
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && lightbox.classList.contains('lb-open')) closeLightbox();
+    });
+  }
+
+  function openLightbox(src, name, triggerEl){
+    if(!lightbox){ initLightbox(); }
+    if(!lightbox) return;
+    _triggerEl = triggerEl || null;
+    lbImg.src = src;
+    lbImg.alt = name;
+    lbCaption.textContent = name;
+    document.getElementById('menu-lightbox').setAttribute('aria-label', name);
+    // prevent background scroll
+    _prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    lightbox.classList.add('lb-open');
+    // move focus to close button
+    setTimeout(function(){ lbClose && lbClose.focus(); }, 50);
+  }
+
+  function closeLightbox(){
+    if(!lightbox) return;
+    lightbox.classList.remove('lb-open');
+    document.body.style.overflow = _prevOverflow;
+    // restore focus to trigger
+    if(_triggerEl){
+      try{ _triggerEl.focus(); } catch(e){}
+      _triggerEl = null;
+    }
+  }
+
+  // Delegate: listen on menu-content for clicks on thumb buttons
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.menu-item__thumb-btn');
+    if(!btn) return;
+    var src = btn.getAttribute('data-lightbox-src');
+    var name = btn.getAttribute('data-lightbox-name');
+    if(src) openLightbox(src, name, btn);
+  });
+
+  // Also handle Enter/Space keyboard activation (button handles it natively,
+  // but ensure it fires via the click handler above — <button> always does).
+  // Initialize lightbox elements on DOMContentLoaded
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initLightbox);
+  } else {
+    initLightbox();
+  }
+})();
 
 // ---- wire up events ----
 function init(){
