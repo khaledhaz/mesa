@@ -185,34 +185,165 @@ body{background:var(--color-bg);min-height:100vh}
 .wizard-progress-fill{height:100%;background:var(--color-primary);border-radius:var(--radius-full);transition:width var(--duration-normal)}
 .wizard-step-label{font-size:12px;color:var(--color-text-muted);margin-bottom:var(--space-5)}
 
+/* ===== DYNAMIC / ANIMATION ===== */
+
+/* Toast slide-in */
+#mesa-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#mesa-toast .toast-item{background:var(--color-text-primary);color:#fff;padding:10px 20px;border-radius:var(--radius-full);font-size:14px;font-weight:500;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(12px);transition:opacity .25s ease,transform .25s ease;pointer-events:none}
+#mesa-toast .toast-item.toast-visible{opacity:1;transform:translateY(0)}
+
+/* KPI count-up: target .kpi-value[data-countup] */
+@keyframes kpi-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.kpi-card{animation:kpi-in .3s var(--easing-standard) both}
+.kpi-card:nth-child(1){animation-delay:.04s}
+.kpi-card:nth-child(2){animation-delay:.08s}
+.kpi-card:nth-child(3){animation-delay:.12s}
+.kpi-card:nth-child(4){animation-delay:.16s}
+.kpi-card:nth-child(5){animation-delay:.20s}
+.kpi-card:nth-child(6){animation-delay:.24s}
+
+/* Section fade transition */
+@keyframes section-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.section.active{animation:section-in .2s var(--easing-standard) both}
+
+/* Skeleton shimmer */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.skeleton{background:linear-gradient(90deg,var(--color-surface-raised) 25%,var(--color-border) 50%,var(--color-surface-raised) 75%);background-size:800px 100%;animation:shimmer 1.4s infinite linear;border-radius:var(--radius-md)}
+
+/* Card/row hover lift */
+.table-card{transition:border-color var(--duration-fast),box-shadow var(--duration-fast),transform var(--duration-fast)}
+.table-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.table-card:active{transform:translateY(0)}
+.kpi-card{transition:box-shadow var(--duration-fast),transform var(--duration-fast)}
+.kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.data-table tr{transition:background var(--duration-fast)}
+.icon-btn{transition:color var(--duration-fast),background var(--duration-fast),transform var(--duration-fast)}
+.icon-btn:active{transform:scale(.92)}
+.btn{transition:background var(--duration-fast),box-shadow var(--duration-fast),transform var(--duration-fast),color var(--duration-fast),border-color var(--duration-fast),opacity var(--duration-fast)}
+.btn:active{transform:scale(.97)}
+
+/* Live pulse — more prominent */
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}70%{box-shadow:0 0 0 6px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.live-dot{animation:pulse-dot 3s infinite,pulse-ring 2s infinite}
+
+/* Drawer / modal animated open */
+.drawer{transition:transform var(--duration-normal) var(--easing-decelerate)}
+.modal-overlay{transition:opacity .15s ease}
+.modal-overlay:not(.open){opacity:0;pointer-events:none}
+.modal-overlay.open{opacity:1}
+.modal{transition:transform .2s var(--easing-decelerate),opacity .2s ease}
+.modal-overlay:not(.open) .modal{transform:scale(.95) translateY(8px);opacity:0}
+.modal-overlay.open .modal{transform:scale(1) translateY(0);opacity:1}
+
+/* Nav item active indicator */
+.nav-item{position:relative;overflow:hidden}
+.nav-item::after{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%) scaleY(0);width:3px;height:60%;background:var(--color-primary);border-radius:0 2px 2px 0;transition:transform var(--duration-fast)}
+.nav-item.active::after{transform:translateY(-50%) scaleY(1)}
+
+/* Bottom tab bar (phone) */
+.bottom-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--color-text-primary);z-index:200;border-top:1px solid rgba(255,255,255,.1);padding:0 4px;align-items:stretch}
+.bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:rgba(255,255,255,.6);cursor:pointer;padding:4px 2px;font-size:10px;font-weight:500;letter-spacing:.02em;min-width:0;transition:color var(--duration-fast)}
+.bottom-tab svg{flex-shrink:0}
+.bottom-tab.active{color:#fff}
+.bottom-tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+
+/* ===== RESPONSIVE ===== */
+
 /* Mobile */
 .mobile-overlay{display:none;position:fixed;inset:0;background:var(--color-overlay);z-index:199}
+
+/* ---- Tablet (≤1023px) ---- */
 @media(max-width:1023px){
   .sidebar{transform:translateX(-100%);transition:transform var(--duration-normal) var(--easing-decelerate)}
   .sidebar.open{transform:translateX(0)}
   .mobile-overlay.open{display:block}
-  .main-area{margin-left:0}
+  .main-area{margin-left:0;min-width:0}
+  /* Let the flex chain shrink to the viewport instead of sizing to content (prevents h-overflow) */
+  #content-area{min-width:0;max-width:100%}
+  .data-table-wrap{max-width:100%}
   .hamburger{display:flex}
   .topbar{padding:0 var(--space-4)}
-  .content-area{padding:var(--space-4)}
+  .content-area{padding:var(--space-5)}
   .menu-layout{flex-direction:column}
   .cat-panel{width:100%}
-  .kpi-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-  .floor-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-  .drawer{width:100%;border-radius:var(--radius-xl) var(--radius-xl) 0 0;top:auto;bottom:0;height:90vh}
+  .kpi-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .floor-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  /* Drawer becomes bottom sheet on tablet too */
+  .drawer{width:100%;max-width:100%;border-radius:var(--radius-xl) var(--radius-xl) 0 0;top:auto;bottom:0;height:92vh}
   .drawer.open{transform:translateY(0)}
   .drawer:not(.open){transform:translateY(100%)}
+  /* Modal full-width on tablet */
+  .modal{max-width:calc(100vw - 32px)}
+  /* Analytics grid stack */
+  .analytics-grid{grid-template-columns:1fr!important}
+  /* Team KPI */
+  #team-kpi{grid-template-columns:repeat(3,1fr)!important}
+  /* Tables header flex-wrap */
+  #section-tables>div:first-child{flex-wrap:wrap;gap:var(--space-3)}
 }
+
+/* ---- Phone (≤599px) ---- */
 @media(max-width:599px){
-  .filter-bar{overflow-x:auto;padding-bottom:var(--space-2)}
-  .seg-control{flex-shrink:0}
-  .qr-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  /* Show bottom tab bar; hamburger still accessible for Team section */
+  .bottom-tab-bar{display:flex}
+  /* Push content above bottom tab bar */
+  .content-area{padding:var(--space-4);padding-bottom:76px}
+  .topbar{padding:0 var(--space-4)}
+  .topbar-title{font-size:18px}
+  #live-indicator span:not(.live-dot){display:none}/* keep dot, hide "Live" text */
+  /* KPI 2-col */
   .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi-value{font-size:22px}
+  /* Floor: auto-fit so content-rich cards get 1 col on phones, 2 col only when they fit */
+  .floor-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  /* Filter bar scroll */
+  .filter-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:var(--space-2);flex-wrap:nowrap}
+  .seg-control{flex-shrink:0}
+  /* Tables section header stack */
+  #section-tables>div:first-child,#section-menu>div:first-child{flex-direction:column;align-items:flex-start}
+  #section-tables>div:first-child>div{width:100%;display:flex;gap:var(--space-2)}
+  #section-tables>div:first-child>div>.btn{flex:1}
+  /* QR grid 2-col */
+  .qr-grid{grid-template-columns:1fr 1fr}
+  /* Bar chart label narrower */
+  .bar-label{width:90px;font-size:13px}
+  .bar-val{width:64px;font-size:12px}
+  /* Team KPI stack */
+  #team-kpi{grid-template-columns:1fr 1fr!important}
+  /* Settings card padding */
+  .settings-card{padding:var(--space-4)}
+  /* Modal full-height bottom sheet on phone */
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{border-radius:var(--radius-xl) var(--radius-xl) 0 0;max-width:100%;width:100%;padding:var(--space-6) var(--space-5);margin:0;max-height:92vh;overflow-y:auto}
+  .modal-overlay:not(.open) .modal{transform:translateY(100%)}
+  .modal-overlay.open .modal{transform:translateY(0);opacity:1}
+  /* Wizard card */
+  .wizard-card{padding:var(--space-6) var(--space-4)}
+  /* Analytics grid (already handled by .analytics-grid at ≤1023px) */
+  /* Data table overflow */
+  .data-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .data-table{min-width:480px}
+  /* Toast above bottom bar */
+  #mesa-toast{bottom:72px}
+}
+
+/* ---- Very small (≤374px) ---- */
+@media(max-width:374px){
+  .kpi-grid{grid-template-columns:1fr}
+  .floor-grid{grid-template-columns:1fr}
+  .qr-grid{grid-template-columns:1fr}
+  .kpi-value{font-size:20px}
+}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .skeleton{animation:none;background:var(--color-surface-raised)}
 }
 
 /* Print styles for QR cards */
 @media print{
-  .sidebar,.topbar,.filter-bar,.topbar-right,button:not(.print-ok),.drawer-overlay,.modal-overlay{display:none!important}
+  .sidebar,.topbar,.filter-bar,.topbar-right,button:not(.print-ok),.drawer-overlay,.modal-overlay,.bottom-tab-bar{display:none!important}
   .main-area{margin-left:0}
   .qr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;page-break-inside:avoid}
   .qr-card{border:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
@@ -275,6 +406,31 @@ body{background:var(--color-bg);min-height:100vh}
 <!-- APP SHELL -->
 <div id="app-shell">
   <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true"></div>
+
+  <!-- BOTTOM TAB BAR (phone only, ≤599px) -->
+  <nav class="bottom-tab-bar" id="bottom-tab-bar" aria-label="Main navigation">
+    <button class="bottom-tab active" data-section="floor" aria-label="Floor Board" aria-current="page">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Floor</span>
+    </button>
+    <button class="bottom-tab" data-section="menu" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Menu</span>
+    </button>
+    <button class="bottom-tab" data-section="tables" aria-label="Tables and QR codes">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/></svg>
+      <span>Tables</span>
+    </button>
+    <button class="bottom-tab" data-section="analytics" aria-label="Analytics">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Analytics</span>
+    </button>
+    <button class="bottom-tab" data-section="settings" aria-label="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
   <nav class="sidebar" id="sidebar" aria-label="Dashboard navigation">
     <div class="sidebar-logo">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 32" height="28" fill="none" aria-label="mesa">
@@ -407,10 +563,10 @@ body{background:var(--color-bg);min-height:100vh}
           </div>
         </div>
         <div id="analytics-kpi" class="kpi-grid"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-2)">
+        <div class="analytics-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-2)">
           <div class="card card-pad" style="grid-column:1/-1">
             <h3 class="t-h3" style="margin-bottom:var(--space-4)">Server performance</h3>
-            <div style="overflow-x:auto"><table class="data-table" id="server-table"><thead><tr><th>Server</th><th>Sessions</th><th>Tips earned</th><th>Avg tip %</th></tr></thead><tbody id="server-tbody"></tbody></table></div>
+            <div class="data-table-wrap" style="overflow-x:auto"><table class="data-table" id="server-table"><thead><tr><th>Server</th><th>Sessions</th><th>Tips earned</th><th>Avg tip %</th></tr></thead><tbody id="server-tbody"></tbody></table></div>
           </div>
           <div class="card card-pad">
             <h3 class="t-h3" style="margin-bottom:var(--space-4)">Top items by revenue</h3>
@@ -431,7 +587,7 @@ body{background:var(--color-bg);min-height:100vh}
         </div>
         <div id="team-kpi" class="kpi-grid" style="grid-template-columns:repeat(3,1fr)"></div>
         <div class="card" style="margin-top:var(--space-4)">
-          <div style="overflow-x:auto"><table class="data-table" id="team-table"><thead><tr><th>Server</th><th>Sessions served</th><th>Tips earned</th><th>Avg tip %</th><th>Actions</th></tr></thead><tbody id="team-tbody"></tbody></table></div>
+          <div class="data-table-wrap" style="overflow-x:auto"><table class="data-table" id="team-table"><thead><tr><th>Server</th><th>Sessions served</th><th>Tips earned</th><th>Avg tip %</th><th>Actions</th></tr></thead><tbody id="team-tbody"></tbody></table></div>
         </div>
         <div id="team-empty" class="empty-state" style="display:none">
           <p class="empty-title">No team members yet</p>
@@ -640,6 +796,7 @@ function route(hash){
   if(sec){ sec.classList.add('active'); sec.style.display='block'; }
   var titles = {floor:'Floor Board',menu:'Menu',tables:'Tables & QR codes',analytics:'Analytics',team:'Team & Tips',settings:'Settings'};
   $('#topbar-title').textContent = titles[section]||'Dashboard';
+  syncBottomTabs(section);
   // lazy-load section data
   if(section==='floor') loadFloor();
   else if(section==='menu') loadMenu();
@@ -670,6 +827,20 @@ $('#hamburger-btn').addEventListener('click', function(){
 });
 $('#mobile-overlay').addEventListener('click', closeSidebar);
 
+/* ---- bottom tab bar navigation ---- */
+$$('#bottom-tab-bar .bottom-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    location.hash = '#/' + tab.dataset.section;
+  });
+});
+function syncBottomTabs(section){
+  $$('#bottom-tab-bar .bottom-tab').forEach(function(tab){
+    var active = tab.dataset.section === section;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+}
+
 /* ---- auth ---- */
 $('#pw-toggle-btn').addEventListener('click', function(){
   var inp = $('#login-password');
@@ -680,6 +851,7 @@ $('#pw-toggle-btn').addEventListener('click', function(){
 $('#demo-btn').addEventListener('click', function(){
   $('#login-email').value = MESA.cfg.DEMO_OWNER_EMAIL;
   $('#login-password').value = 'mesademo123';
+  doSignIn();
 });
 $('#signin-btn').addEventListener('click', doSignIn);
 $('#login-email').addEventListener('keydown', function(e){ if(e.key==='Enter') doSignIn(); });
@@ -1409,16 +1581,21 @@ async function loadAnalytics(range){
   var totalTips = pmts.reduce(function(s,p){ return s+p.tip_cents; },0);
   var aov = pmts.length ? Math.round(totalRev/pmts.length) : 0;
   var cur = state.restaurant.currency;
-  kpiEl.innerHTML = [
-    {label:'Total revenue',value:money(totalRev,cur),delta:''},
-    {label:'Tips collected',value:money(totalTips,cur),delta:''},
-    {label:'Average order',value:money(aov,cur),delta:''},
-    {label:'Payments received',value:String(pmts.length),delta:''},
-    {label:'Tip rate (of food)',value:(totalRev-totalTips)>0?((totalTips/(totalRev-totalTips))*100).toFixed(1)+'%':'—',delta:''},
-    {label:'Loyalty members',value:String((loyalty||[]).length),delta:''}
-  ].map(function(k){
-    return '<div class="kpi-card"><p class="kpi-label">'+esc(k.label)+'</p><p class="kpi-value num">'+esc(k.value)+'</p>'+(k.delta?'<p class="kpi-delta neutral">'+esc(k.delta)+'</p>':'')+'</div>';
+  var tipRatePct = (totalRev-totalTips)>0 ? parseFloat(((totalTips/(totalRev-totalTips))*100).toFixed(1)) : null;
+  var kpiDefs = [
+    {label:'Total revenue',value:money(totalRev,cur),raw:totalRev/100,prefix:cur==='GBP'?'£':cur==='USD'?'$':cur==='EUR'?'€':'',suffix:'',decimals:2},
+    {label:'Tips collected',value:money(totalTips,cur),raw:totalTips/100,prefix:cur==='GBP'?'£':cur==='USD'?'$':cur==='EUR'?'€':'',suffix:'',decimals:2},
+    {label:'Average order',value:money(aov,cur),raw:aov/100,prefix:cur==='GBP'?'£':cur==='USD'?'$':cur==='EUR'?'€':'',suffix:'',decimals:2},
+    {label:'Payments received',value:String(pmts.length),raw:pmts.length,prefix:'',suffix:'',decimals:0},
+    {label:'Tip rate (of food)',value:tipRatePct!==null?tipRatePct.toFixed(1)+'%':'—',raw:tipRatePct,prefix:'',suffix:'%',decimals:1},
+    {label:'Loyalty members',value:String((loyalty||[]).length),raw:(loyalty||[]).length,prefix:'',suffix:'',decimals:0}
+  ];
+  kpiEl.innerHTML = kpiDefs.map(function(k){
+    var countupAttrs = (k.raw!==null&&k.raw!==undefined&&isFinite(k.raw))
+      ? ' data-countup="'+k.raw+'" data-prefix="'+esc(k.prefix)+'" data-suffix="'+esc(k.suffix)+'" data-decimals="'+k.decimals+'"' : '';
+    return '<div class="kpi-card"><p class="kpi-label">'+esc(k.label)+'</p><p class="kpi-value num"'+countupAttrs+'>'+esc(k.value)+'</p></div>';
   }).join('');
+  runKpiCountUps(kpiEl);
   // server table — aggregate per server across the period (view is grouped by day)
   var srvMap={};
   (servers||[]).forEach(function(s){
@@ -1466,11 +1643,18 @@ async function loadTeam(){
   var totalTips = Object.values(tipMap).reduce(function(s,v){ return s+v.tips; },0);
   var topEarner = Object.entries(tipMap).sort(function(a,b){ return b[1].tips-a[1].tips; })[0];
   var avgTip = staffList.length ? Math.round(totalTips/staffList.length) : 0;
-  $('#team-kpi').innerHTML = [
-    {label:'Tips this period',value:money(totalTips,cur)},
-    {label:'Avg per server',value:money(avgTip,cur)},
-    {label:'Top earner',value:topEarner?esc(topEarner[0]):'—'}
-  ].map(function(k){ return '<div class="kpi-card"><p class="kpi-label">'+esc(k.label)+'</p><p class="kpi-value">'+k.value+'</p></div>'; }).join('');
+  var teamKpiDefs = [
+    {label:'Tips this period',value:money(totalTips,cur),raw:totalTips/100,prefix:cur==='GBP'?'£':cur==='USD'?'$':cur==='EUR'?'€':'',suffix:'',decimals:2},
+    {label:'Avg per server',value:money(avgTip,cur),raw:avgTip/100,prefix:cur==='GBP'?'£':cur==='USD'?'$':cur==='EUR'?'€':'',suffix:'',decimals:2},
+    {label:'Top earner',value:topEarner?esc(topEarner[0]):'—',raw:null}
+  ];
+  var teamKpiEl = $('#team-kpi');
+  teamKpiEl.innerHTML = teamKpiDefs.map(function(k){
+    var countupAttrs = (k.raw!==null&&k.raw!==undefined&&isFinite(k.raw))
+      ? ' data-countup="'+k.raw+'" data-prefix="'+esc(k.prefix)+'" data-suffix="'+esc(k.suffix)+'" data-decimals="'+k.decimals+'"' : '';
+    return '<div class="kpi-card"><p class="kpi-label">'+esc(k.label)+'</p><p class="kpi-value"'+countupAttrs+'>'+k.value+'</p></div>';
+  }).join('');
+  runKpiCountUps(teamKpiEl);
   if(!staffList.length){ $('#team-empty').style.display='block'; $('#team-tbody').innerHTML=''; return; }
   $('#team-empty').style.display='none';
   $('#team-tbody').innerHTML = staffList.map(function(s){
@@ -1710,6 +1894,34 @@ document.addEventListener('keydown', function(e){
     closeSidebar();
   }
 });
+
+/* ---- KPI count-up ---- */
+function animateCountUp(el, endVal, prefix, suffix, decimals){
+  if(typeof endVal !== 'number' || !isFinite(endVal)) return;
+  var duration = 700, startTime = null;
+  var startVal = 0;
+  var fmt = function(n){ return prefix + n.toFixed(decimals||0) + suffix; };
+  function step(ts){
+    if(!startTime) startTime = ts;
+    var progress = Math.min((ts - startTime)/duration, 1);
+    var ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = fmt(startVal + (endVal - startVal)*ease);
+    if(progress < 1) requestAnimationFrame(step);
+    else el.textContent = fmt(endVal);
+  }
+  requestAnimationFrame(step);
+}
+function runKpiCountUps(container){
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  (container||document).querySelectorAll('.kpi-value[data-countup]').forEach(function(el){
+    var raw = el.dataset.countup;
+    var prefix = el.dataset.prefix||'';
+    var suffix = el.dataset.suffix||'';
+    var decimals = parseInt(el.dataset.decimals||'0')||0;
+    var val = parseFloat(raw);
+    if(!isNaN(val)) animateCountUp(el, val, prefix, suffix, decimals);
+  });
+}
 
 /* ---- boot ---- */
 (async function boot(){

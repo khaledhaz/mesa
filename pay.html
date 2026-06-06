@@ -12,8 +12,33 @@
 <style>
 /* ---- page shell ---- */
 html,body{height:100%;overflow-x:hidden}
-body{background:var(--color-bg)}
-#app{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;background:var(--color-bg)}
+body{
+  background:var(--color-bg);
+}
+/* Pleasant warm backdrop on tablet/desktop so the 480px card "floats" */
+@media (min-width:540px){
+  body{
+    background:#f0ece8;
+    min-height:100dvh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+  }
+}
+#app{
+  max-width:480px;
+  width:100%;
+  margin:0 auto;
+  min-height:100dvh;
+  position:relative;
+  background:var(--color-bg);
+}
+@media (min-width:540px){
+  #app{
+    min-height:100dvh;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.06), 0 8px 40px rgba(0,0,0,0.12);
+  }
+}
 
 /* ---- brand strip ---- */
 .brand-strip{
@@ -43,7 +68,7 @@ body{background:var(--color-bg)}
 .bill-header__meta h2{font-size:22px;font-weight:600;color:var(--color-text-primary);margin-bottom:2px}
 .bill-header__meta p{font-size:14px;color:var(--color-text-secondary)}
 .bill-header__divider{height:1px;background:var(--color-border);margin:var(--space-3) 0}
-.bill-header__total{font-size:36px;font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;letter-spacing:-0.03em}
+.bill-header__total{font-size:clamp(28px,9vw,40px);font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;letter-spacing:-0.03em}
 .bill-header__summary{font-size:14px;color:var(--color-text-secondary);margin-top:4px}
 
 /* ---- presence bar ---- */
@@ -141,6 +166,7 @@ body{background:var(--color-bg)}
 }
 .btn-pay:hover{filter:brightness(0.94)}
 .btn-pay:active{transform:scale(0.97)}
+.btn-pay:focus-visible{outline:3px solid var(--color-restaurant-accent);outline-offset:3px;filter:brightness(0.94)}
 .btn-pay:disabled{background:var(--color-border);color:var(--color-text-muted);box-shadow:none;cursor:not-allowed;transform:none;filter:none}
 
 /* ---- bottom sheet ---- */
@@ -157,20 +183,28 @@ body{background:var(--color-bg)}
   border-radius:var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow:var(--shadow-xl);
   z-index:201;
-  transition:transform var(--duration-slow) var(--easing-decelerate);
+  transition:transform 380ms cubic-bezier(0.22,1,0.36,1);
   max-height:92dvh;overflow-y:auto;
   padding:var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom,0));
 }
 .bottom-sheet.open{transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){
+  .bottom-sheet{transition:transform 150ms ease}
+}
 .sheet-handle{width:40px;height:4px;background:var(--color-border-strong);border-radius:var(--radius-full);margin:0 auto var(--space-5)}
 .sheet-close{
   position:absolute;top:var(--space-4);right:var(--space-4);
-  width:36px;height:36px;border-radius:50%;
+  /* 44px tap target */
+  width:44px;height:44px;border-radius:50%;
   background:var(--color-surface-raised);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;border:none;color:var(--color-text-secondary);
   font-size:18px;
+  transition:background var(--duration-fast),transform 120ms var(--easing-spring);
 }
+.sheet-close:hover{background:var(--color-border)}
+.sheet-close:active{transform:scale(0.88)}
+.sheet-close:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .sheet-title{font-size:22px;font-weight:600;color:var(--color-text-primary);margin-bottom:var(--space-6)}
 
 /* ---- split chooser ---- */
@@ -182,10 +216,20 @@ body{background:var(--color-bg)}
   background:var(--color-surface);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-2);
   cursor:pointer;padding:var(--space-4);
-  transition:border-color var(--duration-fast),background var(--duration-fast);
+  transition:border-color var(--duration-fast),background var(--duration-fast),
+             transform 160ms var(--easing-spring),box-shadow 160ms ease;
 }
-.split-card:hover{border-color:var(--color-border-strong)}
-.split-card.selected{border-color:var(--color-restaurant-accent);background:var(--color-primary-light)}
+.split-card:hover{border-color:var(--color-border-strong);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.split-card:active{transform:scale(0.96)}
+.split-card.selected{
+  border-color:var(--color-restaurant-accent);
+  background:var(--color-primary-light);
+  box-shadow:0 4px 16px rgba(196,82,42,0.18);
+}
+@media (prefers-reduced-motion:no-preference){
+  .split-card.selected{animation:cardSelect 220ms var(--easing-spring);}
+}
+@keyframes cardSelect{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
 .split-card:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .split-card__icon{color:var(--color-text-primary)}
 .split-card__label{font-size:13px;font-weight:500;color:var(--color-text-primary);text-align:center}
@@ -194,12 +238,13 @@ body{background:var(--color-bg)}
 /* stepper */
 .stepper{display:flex;align-items:center;justify-content:center;gap:var(--space-4);padding:var(--space-3) 0}
 .stepper-btn{
-  width:36px;height:36px;border-radius:50%;border:1px solid var(--color-border);
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--color-border);
   background:var(--color-surface);display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:20px;color:var(--color-text-primary);
-  transition:background var(--duration-fast);
+  transition:background var(--duration-fast),transform 120ms var(--easing-spring);
 }
 .stepper-btn:hover{background:var(--color-surface-raised)}
+.stepper-btn:active{transform:scale(0.88)}
 .stepper-val{font-size:18px;font-weight:600;color:var(--color-text-primary);min-width:80px;text-align:center}
 
 /* custom amount */
@@ -258,7 +303,7 @@ body{background:var(--color-bg)}
   padding:var(--space-5);
 }
 .bill-summary-card__label{font-size:18px;font-weight:600;color:var(--color-text-secondary);margin-bottom:var(--space-2)}
-.bill-summary-card__amount{font-size:36px;font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;letter-spacing:-0.03em}
+.bill-summary-card__amount{font-size:clamp(28px,9vw,40px);font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;letter-spacing:-0.03em}
 .breakdown-toggle{
   display:flex;align-items:center;gap:var(--space-1);
   font-size:13px;font-weight:500;color:var(--color-primary);
@@ -291,12 +336,21 @@ body{background:var(--color-bg)}
   flex:1;min-height:56px;border-radius:var(--radius-full);
   border:2px solid var(--color-border);background:var(--color-surface);
   cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:border-color var(--duration-fast),background var(--duration-fast);
+  transition:border-color var(--duration-fast),background var(--duration-fast),
+             transform 150ms var(--easing-spring),box-shadow 150ms ease;
   padding:var(--space-2);
 }
-.tip-chip:hover{border-color:var(--color-border-strong)}
-.tip-chip.selected{border-color:var(--color-accent);background:var(--color-accent-light)}
-.tip-chip.no-tip.selected{border-color:var(--color-border-strong);background:var(--color-surface-raised)}
+.tip-chip:hover{border-color:var(--color-border-strong);transform:translateY(-1px)}
+.tip-chip:active{transform:scale(0.93)}
+.tip-chip.selected{
+  border-color:var(--color-accent);background:var(--color-accent-light);
+  box-shadow:0 3px 12px rgba(0,0,0,0.10);
+}
+@media (prefers-reduced-motion:no-preference){
+  .tip-chip.selected{animation:tipSelect 220ms var(--easing-spring);}
+}
+@keyframes tipSelect{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+.tip-chip.no-tip.selected{border-color:var(--color-border-strong);background:var(--color-surface-raised);box-shadow:none}
 .tip-chip__pct{font-size:18px;font-weight:600;color:var(--color-text-primary)}
 .tip-chip__amt{font-size:11px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
 .tip-custom-link{text-align:center;margin:var(--space-3) var(--space-4) 0;font-size:13px;font-weight:500;color:var(--color-primary);cursor:pointer;border:none;background:none;width:100%}
@@ -339,7 +393,7 @@ body{background:var(--color-bg)}
 .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--color-border)}
 .checkout-form{display:flex;flex-direction:column;gap:var(--space-3)}
 .input-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
-.checkout-sheet-total{font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--color-text-primary);margin-bottom:var(--space-5);letter-spacing:-0.03em}
+.checkout-sheet-total{font-size:clamp(28px,9vw,40px);font-weight:600;font-variant-numeric:tabular-nums;color:var(--color-text-primary);margin-bottom:var(--space-5);letter-spacing:-0.03em}
 .trust-badges{display:flex;align-items:center;justify-content:center;gap:var(--space-3);margin-top:var(--space-4);flex-wrap:wrap;font-size:11px;color:var(--color-text-muted)}
 .processing-overlay{
   position:absolute;inset:0;background:rgba(255,255,255,.85);
@@ -356,43 +410,75 @@ body{background:var(--color-bg)}
 /* ---- success screen ---- */
 #screen-success{background:var(--color-bg);min-height:100dvh;padding-bottom:calc(100px + env(safe-area-inset-bottom,0))}
 .success-hero{
-  height:220px;
+  height:240px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-3);
   background:var(--color-success-light);
   position:relative;overflow:hidden;
   transition:background 600ms ease;
 }
+/* pulsing ring behind checkmark */
+.success-ring{
+  position:absolute;
+  width:80px;height:80px;
+  border-radius:50%;
+  border:3px solid rgba(42,122,85,.22);
+  opacity:0;
+  pointer-events:none;
+}
+@media (prefers-reduced-motion:no-preference){
+  .success-ring.animate{
+    animation:ringPulse 1.6s cubic-bezier(0.22,1,0.36,1) 200ms forwards;
+  }
+}
+@keyframes ringPulse{
+  0%{opacity:.8;transform:scale(0.6)}
+  60%{opacity:.4;transform:scale(1.6)}
+  100%{opacity:0;transform:scale(2.0)}
+}
 .success-checkmark{
-  width:56px;height:56px;color:var(--color-success);
-  opacity:0;transform:scale(.6);
-  transition:opacity var(--duration-celebration) var(--easing-spring),
-             transform var(--duration-celebration) var(--easing-spring);
+  width:64px;height:64px;color:var(--color-success);
+  opacity:0;transform:scale(.5);
+  transition:opacity 300ms var(--easing-spring),
+             transform 400ms cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;z-index:1;
 }
 .success-checkmark.animate{opacity:1;transform:scale(1)}
 .success-amount{
-  font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;
+  font-size:clamp(28px,8vw,42px);font-weight:600;font-variant-numeric:tabular-nums;
   color:var(--color-text-primary);letter-spacing:-0.03em;
-  opacity:0;transform:translateY(8px);
+  opacity:0;transform:translateY(10px);
   transition:opacity var(--duration-slow) var(--easing-decelerate),
              transform var(--duration-slow) var(--easing-decelerate);
 }
 .success-amount.animate{opacity:1;transform:translateY(0)}
-.success-label{font-size:18px;font-weight:600;color:var(--color-text-secondary);opacity:0;transition:opacity var(--duration-slow) var(--easing-decelerate)}
-.success-label.animate{opacity:1}
+.success-label{
+  font-size:18px;font-weight:600;color:var(--color-text-secondary);
+  opacity:0;transform:translateY(6px);
+  transition:opacity var(--duration-slow) var(--easing-decelerate),
+             transform var(--duration-slow) var(--easing-decelerate);
+  transition-delay:80ms;
+}
+.success-label.animate{opacity:1;transform:translateY(0)}
 .ripple{
   position:absolute;border-radius:50%;
-  background:rgba(42,122,85,.18);
+  background:rgba(42,122,85,.14);
   transform:scale(0);
-  animation:rippleOut 500ms var(--easing-decelerate) forwards;
+  animation:rippleOut 600ms var(--easing-decelerate) forwards;
   pointer-events:none;
 }
 @keyframes rippleOut{to{transform:scale(1);opacity:0}}
 .confetti-dot{
-  position:absolute;border-radius:50%;width:7px;height:7px;
-  animation:confettiFall 900ms ease-out forwards;
+  position:absolute;width:8px;height:8px;
+  animation:confettiFall 1000ms ease-out forwards;
   pointer-events:none;
 }
-@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(80px) rotate(360deg)}}
+/* mix rect and circle confetti shapes */
+.confetti-dot:nth-child(odd){border-radius:50%}
+.confetti-dot:nth-child(even){border-radius:2px}
+@keyframes confettiFall{
+  0%{opacity:1;transform:translateY(0) rotate(0) scale(1)}
+  100%{opacity:0;transform:translateY(100px) rotate(420deg) scale(0.6)}
+}
 
 /* receipt */
 .receipt-card{
@@ -418,10 +504,11 @@ body{background:var(--color-bg)}
 .loyalty-card{
   background:var(--color-accent-light);border:1px solid var(--color-accent);border-radius:var(--radius-lg);
   margin:var(--space-4) var(--space-4) 0;padding:var(--space-5);
-  opacity:0;transform:translateY(12px);
-  transition:opacity var(--duration-slow) var(--easing-decelerate),transform var(--duration-slow) var(--easing-decelerate);
+  opacity:0;transform:translateY(16px) scale(0.98);
+  transition:opacity 350ms var(--easing-decelerate),
+             transform 400ms cubic-bezier(0.22,1,0.36,1);
 }
-.loyalty-card.animate{opacity:1;transform:translateY(0)}
+.loyalty-card.animate{opacity:1;transform:translateY(0) scale(1)}
 .loyalty-card h3{font-size:18px;font-weight:600;margin-bottom:var(--space-2)}
 .loyalty-card p{font-size:14px;color:var(--color-text-secondary);margin-bottom:var(--space-2)}
 .loyalty-teaser{font-size:14px;font-weight:500;color:var(--color-accent-foreground);margin-bottom:var(--space-4)}
@@ -440,10 +527,11 @@ body{background:var(--color-bg)}
 .review-card{
   background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);
   margin:var(--space-3) var(--space-4) 0;padding:var(--space-5);
-  opacity:0;transform:translateY(12px);
-  transition:opacity var(--duration-slow) var(--easing-decelerate),transform var(--duration-slow) var(--easing-decelerate);
+  opacity:0;transform:translateY(16px) scale(0.98);
+  transition:opacity 350ms var(--easing-decelerate),
+             transform 400ms cubic-bezier(0.22,1,0.36,1);
 }
-.review-card.animate{opacity:1;transform:translateY(0)}
+.review-card.animate{opacity:1;transform:translateY(0) scale(1)}
 .review-card h3{font-size:18px;font-weight:600;margin-bottom:var(--space-2)}
 .review-card p{font-size:14px;color:var(--color-text-secondary);margin-bottom:var(--space-4)}
 .btn-google-review{
@@ -486,10 +574,17 @@ body{background:var(--color-bg)}
 .back-btn{
   display:flex;align-items:center;gap:var(--space-1);
   font-size:13px;font-weight:500;color:var(--color-text-secondary);
-  cursor:pointer;border:none;background:none;padding:var(--space-1);
+  cursor:pointer;border:none;background:none;
+  /* 44px touch target height */
+  min-height:44px;padding:0 var(--space-2);
   border-radius:var(--radius-sm);
+  transition:color var(--duration-fast);
 }
 .back-btn:hover{color:var(--color-text-primary)}
+.back-btn:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;color:var(--color-text-primary)}
+/* On phones the menu header's logo is absolutely centered; hide the back label so the
+   icon-only button can't collide with it. aria-label still announces the destination. */
+@media (max-width:439px){ #back-from-menu .back-btn__label{ position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap; } }
 
 /* ---- view menu link ---- */
 .view-menu-link{
@@ -517,25 +612,30 @@ body{background:var(--color-bg)}
   padding:var(--space-2) var(--space-4);
   display:flex;gap:var(--space-2);overflow-x:auto;
   -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  /* fade edges to hint scrollability */
+  -webkit-mask-image:linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+  mask-image:linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
 }
 .menu-cat-nav::-webkit-scrollbar{display:none}
 .menu-cat-chip{
   flex-shrink:0;
-  padding:6px var(--space-4);
+  padding:0 var(--space-4);
   border-radius:var(--radius-full);
   border:1.5px solid var(--color-border);
   background:var(--color-surface);
   font-size:13px;font-weight:500;color:var(--color-text-secondary);
   cursor:pointer;white-space:nowrap;
-  transition:background var(--duration-fast),border-color var(--duration-fast),color var(--duration-fast);
-  min-height:36px;display:flex;align-items:center;
+  transition:background var(--duration-fast),border-color var(--duration-fast),color var(--duration-fast),
+             transform 120ms var(--easing-spring),box-shadow 120ms ease;
+  min-height:44px;display:flex;align-items:center;
 }
 .menu-cat-chip:hover{background:var(--color-surface-raised);border-color:var(--color-border-strong);color:var(--color-text-primary)}
+.menu-cat-chip:active{transform:scale(0.95)}
 .menu-cat-chip.active{
   background:var(--color-restaurant-accent);
   border-color:var(--color-restaurant-accent);
   color:var(--color-restaurant-accent-foreground);
-  box-shadow:0 2px 8px rgba(196,82,42,0.22);
+  box-shadow:0 2px 10px rgba(196,82,42,0.28);
 }
 .menu-cat-chip:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 
@@ -602,7 +702,7 @@ body{background:var(--color-bg)}
 /* text body */
 .menu-item__body{flex:1;min-width:0}
 .menu-item__name{
-  font-size:16px;font-weight:600;
+  font-size:clamp(14px,4vw,16px);font-weight:600;
   color:var(--color-text-primary);
   line-height:1.35;
   margin-bottom:4px;
@@ -755,6 +855,23 @@ body{background:var(--color-bg)}
   padding:var(--space-12) var(--space-6);text-align:center;gap:var(--space-3);
 }
 
+/* enhanced skeleton shimmer (overrides any token default) */
+@media (prefers-reduced-motion:no-preference){
+  .skeleton{
+    background:linear-gradient(90deg,
+      var(--color-surface-raised,#f0f0f0) 25%,
+      rgba(255,255,255,0.7) 50%,
+      var(--color-surface-raised,#f0f0f0) 75%
+    );
+    background-size:200% 100%;
+    animation:shimmer 1.4s ease-in-out infinite;
+  }
+}
+@keyframes shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+
 /* skeleton — matches new card shape */
 .menu-skeleton-chip{
   height:36px;border-radius:var(--radius-full);flex-shrink:0;
@@ -776,9 +893,54 @@ body{background:var(--color-bg)}
 .menu-skeleton-body{flex:1;display:flex;flex-direction:column;gap:var(--space-2);justify-content:center}
 .menu-skeleton-price{width:48px;height:20px;border-radius:4px;flex-shrink:0;align-self:flex-start}
 
-/* screens visibility */
+/* screens visibility — with tasteful enter animation */
 .screen{display:none}
 .screen.active{display:block}
+@media (prefers-reduced-motion:no-preference){
+  .screen.active{
+    animation:screenIn var(--duration-normal) var(--easing-decelerate) both;
+  }
+}
+@keyframes screenIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ---- animated number flash: applied when a money value changes ---- */
+@media (prefers-reduced-motion:no-preference){
+  .amount-flash{
+    animation:amountFlash 320ms var(--easing-spring);
+  }
+}
+@keyframes amountFlash{
+  0%{opacity:0.4;transform:scale(0.94)}
+  60%{opacity:1;transform:scale(1.05)}
+  100%{opacity:1;transform:scale(1)}
+}
+
+/* ---- bill-item claim claimed-mine pop ---- */
+@media (prefers-reduced-motion:no-preference){
+  .bill-item.claimed-mine{
+    animation:itemClaim 250ms var(--easing-spring);
+  }
+}
+@keyframes itemClaim{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.025)}
+  100%{transform:scale(1)}
+}
+
+/* ---- btn-pay pulse on state change ---- */
+@media (prefers-reduced-motion:no-preference){
+  .btn-pay.enabled-flash{
+    animation:btnEnabledFlash 300ms var(--easing-spring);
+  }
+}
+@keyframes btnEnabledFlash{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.03)}
+  100%{transform:scale(1)}
+}
 
 /* error banner */
 .error-banner{
@@ -792,17 +954,23 @@ body{background:var(--color-bg)}
   .success-checkmark,.success-amount,.success-label,.receipt-item,.loyalty-card,.review-card{
     opacity:1;transform:none;transition:opacity 150ms ease
   }
+  .success-ring{display:none}
   .confetti-dot,.ripple{display:none}
-  .bottom-sheet{transition:none}
-  .menu-item{
-    opacity:1;transform:none;animation:none
-  }
+  .bottom-sheet{transition:transform 150ms ease}
+  .menu-item{opacity:1;transform:none;animation:none}
+  .tip-chip,.split-card,.menu-item__add-btn,.menu-item__stepper-btn,
+  .stepper-btn,.menu-cat-chip{transition:background var(--duration-fast),border-color var(--duration-fast)}
+  .skeleton{animation:none;background:var(--color-surface-raised,#f0f0f0)}
+  .screen.active{animation:none}
+  .amount-flash,.enabled-flash,.menu-item__add-btn.adding,
+  .menu-item__stepper-val.bump,.tip-chip.selected,.split-card.selected,
+  .bill-item.claimed-mine{animation:none}
 }
 
 /* ---- cart: add button + stepper on menu items ---- */
 .menu-item__add-btn{
   display:flex;align-items:center;justify-content:center;
-  min-width:64px;min-height:36px;
+  min-width:64px;min-height:44px;
   margin-top:var(--space-2);
   border-radius:var(--radius-full);
   border:1.5px solid var(--color-restaurant-accent);
@@ -810,17 +978,27 @@ body{background:var(--color-bg)}
   color:var(--color-restaurant-accent);
   font-size:14px;font-weight:600;
   cursor:pointer;
-  transition:background var(--duration-fast),color var(--duration-fast);
+  transition:background var(--duration-fast),color var(--duration-fast),
+             transform 140ms var(--easing-spring),box-shadow 140ms ease;
   white-space:nowrap;
   padding:0 var(--space-3);
 }
 .menu-item__add-btn:hover{
   background:var(--color-restaurant-accent);
   color:var(--color-restaurant-accent-foreground);
+  box-shadow:0 3px 10px rgba(196,82,42,0.28);
 }
+.menu-item__add-btn:active{transform:scale(0.93)}
 .menu-item__add-btn:focus-visible{
   outline:2px solid var(--color-primary);outline-offset:2px;
 }
+/* "added" flash — JS can toggle this class for one frame */
+@media (prefers-reduced-motion:no-preference){
+  .menu-item__add-btn.adding{
+    animation:addPop 200ms var(--easing-spring);
+  }
+}
+@keyframes addPop{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
 
 .menu-item__stepper{
   display:flex;align-items:center;justify-content:flex-end;gap:4px;
@@ -837,7 +1015,7 @@ body{background:var(--color-bg)}
   /* Expand touch target to ≥44×44px without affecting layout */
   position:relative;
   -webkit-tap-highlight-color:transparent;
-  transition:filter var(--duration-fast);
+  transition:filter var(--duration-fast),transform 130ms var(--easing-spring);
   flex-shrink:0;
 }
 .menu-item__stepper-btn::after{
@@ -846,13 +1024,20 @@ body{background:var(--color-bg)}
   inset:-6px; /* 32 + 12 = 44px effective tap area */
 }
 .menu-item__stepper-btn:hover{filter:brightness(0.88)}
+.menu-item__stepper-btn:active{transform:scale(0.84)}
 .menu-item__stepper-btn:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;}
 .menu-item__stepper-val{
   font-size:15px;font-weight:600;
   color:var(--color-restaurant-accent);
   min-width:20px;text-align:center;
   font-variant-numeric:tabular-nums;
+  transition:transform 120ms var(--easing-spring);
 }
+/* qty change flash */
+@media (prefers-reduced-motion:no-preference){
+  .menu-item__stepper-val.bump{animation:valBump 180ms var(--easing-spring);}
+}
+@keyframes valBump{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
 
 /* ---- sticky cart bar ---- */
 .cart-bar{
@@ -1110,6 +1295,7 @@ body{background:var(--color-bg)}
     <div id="success-logo" class="brand-strip__logo"></div>
   </div>
   <div class="success-hero" id="success-hero">
+    <div class="success-ring" id="success-ring" aria-hidden="true"></div>
     <svg class="success-checkmark" id="success-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
     <div id="success-amount" class="success-amount amount"></div>
     <div class="success-label" id="success-label">Payment confirmed</div>
@@ -1159,7 +1345,7 @@ body{background:var(--color-bg)}
   <div class="brand-strip">
     <button class="back-btn" id="back-from-menu" aria-label="Back to bill">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      Back to bill
+      <span class="back-btn__label">Back to bill</span>
     </button>
     <div id="menu-logo" class="brand-strip__logo" style="position:absolute;left:50%;transform:translateX(-50%)"></div>
     <div id="menu-table-label" class="brand-strip__table"></div>
@@ -1338,6 +1524,26 @@ var _cart = {};
 
 // ---- utils ----
 var $ = MESA.el, $$ = MESA.els, m = MESA.money;
+
+// flash an element with the amount-flash animation on value change
+function flashAmount(el){
+  if(!el) return;
+  el.classList.remove('amount-flash');
+  // force reflow so the animation restarts
+  void el.offsetWidth;
+  el.classList.add('amount-flash');
+  el.addEventListener('animationend', function h(){ el.classList.remove('amount-flash'); el.removeEventListener('animationend',h); });
+}
+
+// flash btn-pay when it newly becomes enabled
+function flashBtn(el){
+  if(!el) return;
+  el.classList.remove('enabled-flash');
+  void el.offsetWidth;
+  el.classList.add('enabled-flash');
+  el.addEventListener('animationend', function h(){ el.classList.remove('enabled-flash'); el.removeEventListener('animationend',h); });
+}
+
 function show(id){
   var target = $(id);
   if(!target){ console.warn('[mesa] show(): element not found for selector', id); return; }
@@ -1771,7 +1977,8 @@ function renderBill(){
   var tl = $('#bill-table-label'); if(tl) tl.textContent = table ? table.label : '';
   // header
   var rn = $('#bill-restaurant-name'); if(rn) rn.textContent = rest ? rest.name : '';
-  var bt = $('#bill-total'); if(bt) bt.textContent = m(math.total_before_tip_cents, cur);
+  var bt = $('#bill-total');
+  if(bt){ var _prevBillTotal = bt.textContent; bt.textContent = m(math.total_before_tip_cents, cur); if(_prevBillTotal && _prevBillTotal !== bt.textContent) flashAmount(bt); }
   var unclaimed = state.items.filter(function(x){return !x.claimed_by}).length;
   var sl = $('#bill-summary-line'); if(sl) sl.textContent = state.items.length+' items · '+unclaimed+' unclaimed';
   // totals
@@ -1997,7 +2204,8 @@ function openTipScreen(){
 function updateTipTotal(){
   var cur = state.restaurant?state.restaurant.currency:'GBP';
   var total = state.totalCents + state.tipCents;
-  var ttEl = $('#tip-grand-total'); if(ttEl) ttEl.textContent = m(total, cur);
+  var ttEl = $('#tip-grand-total');
+  if(ttEl){ ttEl.textContent = m(total, cur); flashAmount(ttEl); }
   var attrib = $('#tip-attribution-line');
   if(attrib){
     if(state.tipCents>0 && state.server){
@@ -2012,7 +2220,11 @@ function enablePayBtn(){
   var cur = state.restaurant?state.restaurant.currency:'GBP';
   var total = state.totalCents + state.tipCents;
   var payBtn = $('#btn-pay-now');
-  if(payBtn){ payBtn.disabled=false; payBtn.textContent='Pay '+m(total,cur); }
+  if(payBtn){
+    var wasDisabled = payBtn.disabled;
+    payBtn.disabled=false; payBtn.textContent='Pay '+m(total,cur);
+    if(wasDisabled) flashBtn(payBtn);
+  }
 }
 
 // ---- checkout sheet ----
@@ -2149,11 +2361,12 @@ function showSuccess(){
   if(pref){
     $$('#success-check, #success-amount, #success-label, #loyalty-card, #review-card').forEach(function(el){ el.classList.add('animate'); });
   } else {
+    setTimeout(function(){ var r=$('#success-ring'); if(r) r.classList.add('animate'); }, 60);
     setTimeout(function(){ var c=$('#success-check'); if(c) c.classList.add('animate'); }, 50);
-    setTimeout(function(){ var a=$('#success-amount'); if(a) a.classList.add('animate'); }, 150);
-    setTimeout(function(){ var l=$('#success-label'); if(l) l.classList.add('animate'); }, 180);
-    setTimeout(function(){ spawnRipple(); }, 100);
-    setTimeout(function(){ spawnConfetti(); }, 300);
+    setTimeout(function(){ var a=$('#success-amount'); if(a) a.classList.add('animate'); }, 200);
+    setTimeout(function(){ var l=$('#success-label'); if(l) l.classList.add('animate'); }, 280);
+    setTimeout(function(){ spawnRipple(); }, 120);
+    setTimeout(function(){ spawnConfetti(); }, 350);
     setTimeout(function(){ var lc=$('#loyalty-card'); if(lc) lc.classList.add('animate'); }, 1400);
     setTimeout(function(){ var rv=$('#review-card'); if(rv) rv.classList.add('animate'); }, 1600);
   }
@@ -2170,8 +2383,8 @@ function spawnRipple(){
 
 function spawnConfetti(){
   var hero = $('#success-hero'); if(!hero) return;
-  var colors = ['var(--color-primary)','var(--color-accent)','var(--color-success)','#E8A040','#C4522A'];
-  for(var i=0;i<12;i++){
+  var colors = ['var(--color-primary)','var(--color-accent)','var(--color-success)','#E8A040','#C4522A','#9B59B6','#F39C12'];
+  for(var i=0;i<18;i++){
     (function(i){
       var dot = document.createElement('div'); dot.className='confetti-dot';
       var angle = (i/12)*360;
@@ -2198,9 +2411,8 @@ function openMenuScreen(){
   if(bfm){
     var backLabel = state.session ? 'Back to bill' : 'Back';
     bfm.setAttribute('aria-label', backLabel);
-    // update visible text (keep the SVG arrow, replace trailing text node)
-    var textNodes = Array.prototype.filter.call(bfm.childNodes, function(n){ return n.nodeType === 3; });
-    textNodes.forEach(function(n){ n.textContent = ' ' + backLabel; });
+    var _lbl = bfm.querySelector('.back-btn__label');
+    if(_lbl){ _lbl.textContent = backLabel; }
   }
   updateCartBar();
   if(!_menuLoaded){
