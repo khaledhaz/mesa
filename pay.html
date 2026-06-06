@@ -798,6 +798,88 @@ body{background:var(--color-bg)}
     opacity:1;transform:none;animation:none
   }
 }
+
+/* ---- cart: add button + stepper on menu items ---- */
+.menu-item__add-btn{
+  display:flex;align-items:center;justify-content:center;
+  min-width:64px;min-height:36px;
+  margin-top:var(--space-2);
+  border-radius:var(--radius-full);
+  border:1.5px solid var(--color-restaurant-accent);
+  background:var(--color-surface);
+  color:var(--color-restaurant-accent);
+  font-size:14px;font-weight:600;
+  cursor:pointer;
+  transition:background var(--duration-fast),color var(--duration-fast);
+  white-space:nowrap;
+  padding:0 var(--space-3);
+}
+.menu-item__add-btn:hover{
+  background:var(--color-restaurant-accent);
+  color:var(--color-restaurant-accent-foreground);
+}
+.menu-item__add-btn:focus-visible{
+  outline:2px solid var(--color-primary);outline-offset:2px;
+}
+
+.menu-item__stepper{
+  display:flex;align-items:center;justify-content:flex-end;gap:4px;
+  margin-top:var(--space-2);
+}
+.menu-item__stepper-btn{
+  width:32px;height:32px;border-radius:50%;
+  border:1.5px solid var(--color-restaurant-accent);
+  background:var(--color-restaurant-accent);
+  color:var(--color-restaurant-accent-foreground);
+  font-size:18px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  /* Ensure 44px touch target via padding trick */
+  -webkit-tap-highlight-color:transparent;
+  transition:filter var(--duration-fast);
+  flex-shrink:0;
+}
+.menu-item__stepper-btn:hover{filter:brightness(0.88)}
+.menu-item__stepper-btn:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;}
+.menu-item__stepper-val{
+  font-size:15px;font-weight:600;
+  color:var(--color-restaurant-accent);
+  min-width:20px;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---- sticky cart bar ---- */
+.cart-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:rgba(255,255,255,0.96);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--color-border);
+  padding:var(--space-3) var(--space-4);
+  padding-bottom:calc(var(--space-3) + env(safe-area-inset-bottom,0));
+  z-index:50;
+  display:flex;align-items:center;gap:var(--space-3);
+  box-shadow:0 -4px 16px rgba(0,0,0,0.08);
+}
+.cart-bar__summary{
+  flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;
+}
+.cart-bar__count{
+  font-size:13px;font-weight:600;color:var(--color-text-primary);
+}
+.cart-bar__total{
+  font-size:13px;color:var(--color-text-secondary);font-variant-numeric:tabular-nums;
+}
+.cart-bar__btn{
+  flex-shrink:0;min-width:140px;min-height:48px;
+  border-radius:var(--radius-full);
+  font-size:15px;font-weight:600;
+}
+
+/* Extra bottom padding on menu-content when cart bar is shown */
+#screen-menu.cart-open #menu-content{
+  padding-bottom:calc(80px + env(safe-area-inset-bottom,0));
+}
 </style>
 </head>
 <body>
@@ -865,9 +947,11 @@ body{background:var(--color-bg)}
     <div id="nosession-table" class="brand-strip__table"></div>
   </div>
   <div class="state-screen">
-    <svg class="state-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg>
-    <h1 class="state-title">No open bill yet</h1>
-    <p class="state-body">Your server hasn't opened the bill for this table yet. Ask them to start the session.</p>
+    <svg class="state-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <h1 class="state-title">Ready to order?</h1>
+    <p class="state-body">Browse the menu and add items to start your table — or wait for your server.</p>
+    <button class="state-btn" id="btn-nosession-browse" type="button">Browse menu &amp; order</button>
+    <p style="font-size:13px;color:var(--color-text-muted);margin-top:var(--space-1)">Just paying? Ask your server to open the bill.</p>
   </div>
 </div>
 
@@ -1079,6 +1163,14 @@ body{background:var(--color-bg)}
   <div id="menu-content" class="menu-scroll" aria-live="polite" aria-label="Menu items">
     <!-- filled by JS -->
   </div>
+  <!-- sticky cart bar — shown only when cart non-empty -->
+  <div id="cart-bar" class="cart-bar" style="display:none" role="region" aria-label="Your order">
+    <div class="cart-bar__summary" aria-live="polite" aria-atomic="true">
+      <span id="cart-bar-count" class="cart-bar__count"></span>
+      <span id="cart-bar-total" class="cart-bar__total"></span>
+    </div>
+    <button id="btn-place-order" class="btn-pay cart-bar__btn" type="button">Place order</button>
+  </div>
 </div>
 
 <!-- ===== SHEET OVERLAY ===== -->
@@ -1209,7 +1301,7 @@ body{background:var(--color-bg)}
 </div><!-- #app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/mesa.js"></script>
+<script src="assets/mesa.js?v=2-ordering"></script>
 <script>
 (function(){
 'use strict';
@@ -1229,6 +1321,16 @@ var state = {
   paymentRecord: null,
   realtimeCh: null,
 };
+
+// ---- cart state (keyed by menu_item_id) ----
+// { [menu_item_id]: { menu_item_id, name, unit_price_cents, qty } }
+var _cart = (function(){
+  try {
+    var saved = sessionStorage.getItem('mesa-cart-' + getCode());
+    if(saved) return JSON.parse(saved);
+  } catch(e){}
+  return {};
+})();
 
 // ---- utils ----
 var $ = MESA.el, $$ = MESA.els, m = MESA.money;
@@ -1268,6 +1370,162 @@ function billTotal(){
 }
 function myItems(){ return state.items.filter(function(it){ return it.claimed_by === state.myLabel; }); }
 function mySubtotal(){ return myItems().reduce(function(s,it){ return s + it.unit_price_cents * it.qty; }, 0); }
+
+// ---- cart helpers ----
+function cartPersist(){
+  try { sessionStorage.setItem('mesa-cart-' + state.code, JSON.stringify(_cart)); } catch(e){}
+}
+function cartTotalCents(){
+  return Object.values(_cart).reduce(function(s,e){ return s + e.unit_price_cents * e.qty; }, 0);
+}
+function cartTotalItems(){
+  return Object.values(_cart).reduce(function(s,e){ return s + e.qty; }, 0);
+}
+function cartIsEmpty(){
+  return Object.keys(_cart).length === 0;
+}
+
+function updateCartBar(){
+  var bar = document.getElementById('cart-bar');
+  if(!bar) return;
+  var empty = cartIsEmpty();
+  bar.style.display = empty ? 'none' : '';
+  var menuScreen = document.getElementById('screen-menu');
+  if(menuScreen){
+    menuScreen.classList.toggle('cart-open', !empty);
+  }
+  if(!empty){
+    var cur = state.restaurant ? state.restaurant.currency : 'GBP';
+    var n = cartTotalItems();
+    var countEl = document.getElementById('cart-bar-count');
+    var totalEl = document.getElementById('cart-bar-total');
+    if(countEl) countEl.textContent = n + (n === 1 ? ' item' : ' items') + ' in your order';
+    if(totalEl) totalEl.textContent = m(cartTotalCents(), cur);
+  }
+}
+
+function renderCartControl(li, item){
+  // find .menu-item__meta
+  var meta = li.querySelector('.menu-item__meta');
+  if(!meta) return;
+
+  var entry = _cart[item.id];
+  var qty = entry ? entry.qty : 0;
+
+  // remove existing control if present
+  var existing = meta.querySelector('.menu-item__add-btn, .menu-item__stepper');
+  if(existing) existing.remove();
+
+  if(qty === 0){
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'menu-item__add-btn';
+    addBtn.textContent = '+ Add';
+    addBtn.setAttribute('aria-label', 'Add ' + item.name + ' to order');
+    addBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      _cart[item.id] = { menu_item_id: item.id, name: item.name, unit_price_cents: item.price_cents, qty: 1 };
+      cartPersist();
+      updateCartBar();
+      renderCartControl(li, item);
+    });
+    meta.appendChild(addBtn);
+  } else {
+    var stepper = document.createElement('div');
+    stepper.className = 'menu-item__stepper';
+    stepper.setAttribute('role', 'group');
+    stepper.setAttribute('aria-label', item.name + ' quantity');
+
+    var minusBtn = document.createElement('button');
+    minusBtn.type = 'button';
+    minusBtn.className = 'menu-item__stepper-btn';
+    minusBtn.textContent = '−';
+    minusBtn.setAttribute('aria-label', 'Remove one ' + item.name);
+    minusBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var prevQty = _cart[item.id] ? _cart[item.id].qty : 0;
+      if(prevQty <= 1){
+        delete _cart[item.id];
+      } else {
+        _cart[item.id].qty = prevQty - 1;
+      }
+      cartPersist();
+      updateCartBar();
+      renderCartControl(li, item);
+    });
+
+    var valEl = document.createElement('span');
+    valEl.className = 'menu-item__stepper-val';
+    valEl.textContent = qty;
+    valEl.setAttribute('aria-live', 'polite');
+    valEl.setAttribute('aria-atomic', 'true');
+
+    var plusBtn = document.createElement('button');
+    plusBtn.type = 'button';
+    plusBtn.className = 'menu-item__stepper-btn';
+    plusBtn.textContent = '+';
+    plusBtn.setAttribute('aria-label', 'Add one more ' + item.name);
+    plusBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(_cart[item.id]){
+        _cart[item.id].qty += 1;
+      } else {
+        _cart[item.id] = { menu_item_id: item.id, name: item.name, unit_price_cents: item.price_cents, qty: 1 };
+      }
+      cartPersist();
+      updateCartBar();
+      renderCartControl(li, item);
+    });
+
+    stepper.appendChild(minusBtn);
+    stepper.appendChild(valEl);
+    stepper.appendChild(plusBtn);
+    meta.appendChild(stepper);
+  }
+}
+
+async function placeCartOrder(){
+  var btn = document.getElementById('btn-place-order');
+  if(!btn || btn.disabled) return;
+  if(cartIsEmpty()){ MESA.toast('Add some items first', 'err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Placing…';
+
+  try {
+    var r = await MESA.startTableOrder(state.restaurant.id, state.table.id);
+    if(r.error){
+      MESA.toast('Could not start order — ' + r.error, 'err');
+      btn.disabled = false;
+      btn.textContent = 'Place order';
+      return;
+    }
+
+    var cartItems = Object.values(_cart);
+    var a = await MESA.addOrderItems(r.order_id, r.session_id, cartItems);
+    if(a.error){
+      MESA.toast('Could not add items — ' + a.error, 'err');
+      btn.disabled = false;
+      btn.textContent = 'Place order';
+      return;
+    }
+
+    // success: clear cart
+    _cart = {};
+    cartPersist();
+    updateCartBar();
+    btn.disabled = false;
+    btn.textContent = 'Place order';
+    MESA.toast('Order placed ✓', 'ok');
+    // refresh into bill screen
+    await load();
+  } catch(err){
+    console.error('[mesa] placeCartOrder error', err);
+    MESA.toast('Something went wrong — try again', 'err');
+    btn.disabled = false;
+    btn.textContent = 'Place order';
+  }
+}
 
 // ---- render bill items ----
 function renderBillItems(container, claimable){
@@ -1777,9 +2035,35 @@ function openMenuScreen(){
   var tl = $('#menu-table-label'); if(tl) tl.textContent = state.table ? state.table.label : '';
   show('#screen-menu');
   window.scrollTo(0,0);
+  // sync back-button label/text depending on whether there's a session
+  var bfm = $('#back-from-menu');
+  if(bfm){
+    var backLabel = state.session ? 'Back to bill' : 'Back';
+    bfm.setAttribute('aria-label', backLabel);
+    // update visible text (keep the SVG arrow, replace trailing text node)
+    var textNodes = Array.prototype.filter.call(bfm.childNodes, function(n){ return n.nodeType === 3; });
+    textNodes.forEach(function(n){ n.textContent = ' ' + backLabel; });
+  }
+  updateCartBar();
   if(!_menuLoaded){
     loadMenuData();
+  } else {
+    // menu already rendered — re-sync cart controls to reflect current _cart state
+    // (e.g. cart was cleared after placing an order)
+    refreshMenuCartControls();
   }
+}
+
+function refreshMenuCartControls(){
+  // Each li.menu-item stores a data-item-id attribute set during renderCartControl.
+  // We stored nothing on the li — but we can re-derive the item by matching the
+  // add/stepper control data. Simpler: walk all menu-item li's, read the
+  // stored item object attached directly.
+  var items = $$('#menu-content .menu-item');
+  items.forEach(function(li){
+    var itemData = li._mesaItem;
+    if(itemData) renderCartControl(li, itemData);
+  });
 }
 
 function loadMenuData(){
@@ -2020,12 +2304,23 @@ function renderMenu(categories, items){
           + '<span class="menu-item__price amount">' + m(item.price_cents, cur) + '</span>'
           + '</div>';
 
+        // attach item reference so refreshMenuCartControls() can find it
+        li._mesaItem = item;
+
+        // add-to-cart control (only for available items)
+        if(item.is_available !== false){
+          renderCartControl(li, item);
+        }
+
         list.appendChild(li);
       });
 
       section.appendChild(list);
       content.appendChild(section);
     });
+
+    // sync cart bar after menu rendered
+    updateCartBar();
   }
 }
 
@@ -2171,13 +2466,27 @@ function attachNavScrollSpy(activeCats){
 
 // ---- wire up events ----
 function init(){
+  // no-session → browse menu
+  var bnsb = $('#btn-nosession-browse');
+  if(bnsb) bnsb.addEventListener('click', openMenuScreen);
+
   // bill → view menu
   var bvm = $('#btn-view-menu');
   if(bvm) bvm.addEventListener('click', openMenuScreen);
 
-  // back from menu
+  // back from menu — go to bill if session exists, else no-session
   var bfm = $('#back-from-menu');
-  if(bfm) bfm.addEventListener('click', function(){ show('#screen-bill'); });
+  if(bfm) bfm.addEventListener('click', function(){
+    if(state.session){
+      show('#screen-bill');
+    } else {
+      show('#screen-nosession');
+    }
+  });
+
+  // place order from cart bar
+  var bpo = $('#btn-place-order');
+  if(bpo) bpo.addEventListener('click', placeCartOrder);
 
   // bill → split sheet
   var bhp = $('#btn-how-pay');

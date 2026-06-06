@@ -132,6 +132,62 @@
     return sb.from('mesa_loyalty_members').insert({ restaurant_id: restaurantId, phone: phone, name: name || null, points: 10, visits: 1, last_visit: new Date().toISOString() });
   }
 
+  // ---- Ordering (diner starts/extends a session on a table) ----
+  // Returns { error, session_id, order_id }. Reuses an existing active session/order on the table.
+  async function startTableOrder(restaurantId, tableId) {
+    var existing = await sb.from('mesa_sessions')
+      .select('id')
+      .eq('table_id', tableId)
+      .in('status', ['open', 'seated', 'scanned', 'paying'])
+      .order('opened_at', { ascending: false })
+      .limit(1).maybeSingle();
+    var sessionId = existing && existing.data ? existing.data.id : null;
+    if (!sessionId) {
+      var sIns = await sb.from('mesa_sessions')
+        .insert({ restaurant_id: restaurantId, table_id: tableId, status: 'seated' })
+        .select('id').single();
+      if (sIns.error) {
+        // Race: a session appeared between our check and insert (one-open-per-table index) — re-read it.
+        var re = await sb.from('mesa_sessions').select('id').eq('table_id', tableId)
+          .in('status', ['open', 'seated', 'scanned', 'paying'])
+          .order('opened_at', { ascending: false }).limit(1).maybeSingle();
+        if (re.error || !re.data) return { error: sIns.error };
+        sessionId = re.data.id;
+      } else {
+        sessionId = sIns.data.id;
+      }
+    }
+    var ord = await sb.from('mesa_orders').select('id').eq('session_id', sessionId)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    var orderId = ord && ord.data ? ord.data.id : null;
+    if (!orderId) {
+      var oIns = await sb.from('mesa_orders')
+        .insert({ session_id: sessionId, restaurant_id: restaurantId })
+        .select('id').single();
+      if (oIns.error) return { error: oIns.error };
+      orderId = oIns.data.id;
+    }
+    return { error: null, session_id: sessionId, order_id: orderId };
+  }
+
+  // items: [{ menu_item_id, name, unit_price_cents, qty }]. One row per unit so each is individually claimable/splittable.
+  async function addOrderItems(orderId, sessionId, items) {
+    var rows = [];
+    (items || []).forEach(function (it) {
+      var n = Math.max(1, Number(it.qty || 1));
+      for (var i = 0; i < n; i++) {
+        rows.push({
+          order_id: orderId, session_id: sessionId,
+          menu_item_id: it.menu_item_id || null, name: it.name,
+          unit_price_cents: it.unit_price_cents, qty: 1,
+        });
+      }
+    });
+    if (!rows.length) return { error: null, count: 0 };
+    var ins = await sb.from('mesa_order_items').insert(rows);
+    return { error: ins.error, count: rows.length };
+  }
+
   window.MESA = {
     cfg: CFG, sb: sb,
     money: money, dollars: dollars,
@@ -139,5 +195,6 @@
     applyBrand: applyBrand, contrastWithWhite: contrastWithWhite,
     loadTableBill: loadTableBill, billMath: billMath,
     claimItem: claimItem, insertPayment: insertPayment, joinLoyalty: joinLoyalty,
+    startTableOrder: startTableOrder, addOrderItems: addOrderItems,
   };
 })();
