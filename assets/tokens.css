@@ -1,0 +1,163 @@
+/* ============================================================================
+   Mesa — Design Tokens + Base Component Layer
+   Shared by the diner app (pay.html), dashboard (dashboard.html), landing (index.html).
+   All values from outputs/mesa/design/BRAND.md. Do not invent new colors.
+   ============================================================================ */
+
+:root {
+  /* Primary — Mesa Sienna */
+  --color-primary:#C4522A; --color-primary-hover:#A8431F; --color-primary-light:#FBF0EB;
+  --color-primary-foreground:#FFFFFF;
+  /* Accent — Amber Warm */
+  --color-accent:#E8A040; --color-accent-hover:#C9891C; --color-accent-light:#FEF7EB;
+  --color-accent-foreground:#1A1208;
+  /* Semantic */
+  --color-success:#2A7A55; --color-success-light:#E8F5EF; --color-success-foreground:#FFFFFF;
+  --color-warning:#C47C20; --color-warning-light:#FEF3DC; --color-warning-foreground:#4A2E00;
+  --color-destructive:#B53B2F; --color-destructive-light:#FDEDEB; --color-destructive-foreground:#FFFFFF;
+  --color-info:#2B6CB0; --color-info-light:#EBF4FF;
+  /* Neutrals */
+  --color-bg:#FAF9F7; --color-surface:#FFFFFF; --color-surface-raised:#F5F3F0;
+  --color-border:#E4E0DA; --color-border-strong:#C8C2B8;
+  --color-text-primary:#1C1714; --color-text-secondary:#5C5651; --color-text-muted:#9B948C;
+  --color-text-on-primary:#FFFFFF; --color-overlay:rgba(28,23,20,0.48);
+  /* White-label restaurant accent (overridden at runtime; defaults to primary) */
+  --color-restaurant-accent:#C4522A; --color-restaurant-accent-foreground:#FFFFFF;
+
+  /* Type scale */
+  --font-sans:'Inter','DM Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',ui-monospace,monospace;
+
+  /* Spacing */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px;
+  --space-6:24px; --space-8:32px; --space-10:40px; --space-12:48px; --space-16:64px; --space-24:96px;
+
+  /* Radii */
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-xl:24px; --radius-full:9999px;
+
+  /* Shadow (warm-tinted) */
+  --shadow-sm:0 1px 3px rgba(28,23,20,0.08);
+  --shadow-md:0 4px 12px rgba(28,23,20,0.10),0 1px 3px rgba(28,23,20,0.06);
+  --shadow-lg:0 8px 24px rgba(28,23,20,0.12),0 2px 6px rgba(28,23,20,0.07);
+  --shadow-xl:0 20px 48px rgba(28,23,20,0.16),0 4px 12px rgba(28,23,20,0.08);
+
+  /* Motion */
+  --duration-instant:80ms; --duration-fast:150ms; --duration-normal:250ms; --duration-slow:400ms;
+  --duration-celebration:600ms;
+  --easing-standard:cubic-bezier(0.4,0,0.2,1); --easing-decelerate:cubic-bezier(0,0,0.2,1);
+  --easing-accelerate:cubic-bezier(0.4,0,1,1); --easing-spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ---- Reset / base ---- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  font-family:var(--font-sans); background:var(--color-bg); color:var(--color-text-primary);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4{line-height:1.2; letter-spacing:-0.02em; font-weight:600}
+button,input,select,textarea{font:inherit; color:inherit}
+button{cursor:pointer; border:none; background:none}
+a{color:var(--color-primary); text-decoration:none}
+img{max-width:100%; display:block}
+.num,.amount{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--font-mono)}
+
+/* ---- Type utilities ---- */
+.t-display{font-size:36px;font-weight:600;line-height:1.1;letter-spacing:-0.03em}
+.t-h1{font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-0.02em}
+.t-h2{font-size:22px;font-weight:600;line-height:1.25;letter-spacing:-0.01em}
+.t-h3{font-size:18px;font-weight:600;line-height:1.3}
+.t-body-lg{font-size:17px;line-height:1.5}
+.t-body{font-size:15px;line-height:1.5}
+.t-body-md{font-size:14px;line-height:1.5}
+.t-label{font-size:13px;font-weight:500;line-height:1.4;letter-spacing:0.01em}
+.t-caption{font-size:12px;line-height:1.4;letter-spacing:0.01em;color:var(--color-text-secondary)}
+.t-overline{font-size:11px;font-weight:600;line-height:1.3;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-text-secondary)}
+.muted{color:var(--color-text-secondary)}
+.faint{color:var(--color-text-muted)}
+
+/* ---- Focus ---- */
+:focus-visible{outline:2px solid var(--color-primary); outline-offset:2px; border-radius:var(--radius-sm)}
+
+/* ---- Buttons ---- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--space-2);
+  min-height:48px; padding:0 var(--space-5); border-radius:var(--radius-md);
+  font-size:15px; font-weight:500; letter-spacing:0.01em; transition:background var(--duration-fast),
+  border-color var(--duration-fast), transform var(--duration-instant); user-select:none;
+}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.5; cursor:not-allowed}
+.btn-block{width:100%}
+.btn-lg{min-height:52px; font-size:16px}
+.btn-primary{background:var(--color-primary); color:var(--color-primary-foreground)}
+.btn-primary:hover{background:var(--color-primary-hover)}
+.btn-accent{background:var(--color-accent); color:var(--color-accent-foreground)}
+.btn-accent:hover{background:var(--color-accent-hover)}
+/* white-label primary action uses restaurant accent */
+.btn-brand{background:var(--color-restaurant-accent); color:var(--color-restaurant-accent-foreground)}
+.btn-brand:hover{filter:brightness(0.94)}
+.btn-secondary{background:var(--color-surface); color:var(--color-text-primary); border:1px solid var(--color-border)}
+.btn-secondary:hover{background:var(--color-surface-raised)}
+.btn-ghost{background:transparent; color:var(--color-text-primary)}
+.btn-ghost:hover{background:var(--color-surface-raised)}
+.btn-success{background:var(--color-success); color:var(--color-success-foreground)}
+.btn-danger{background:var(--color-destructive); color:var(--color-destructive-foreground)}
+
+/* ---- Cards / surfaces ---- */
+.card{background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md);
+  box-shadow:var(--shadow-sm)}
+.card-pad{padding:var(--space-5)}
+.sheet{background:var(--color-surface); border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-lg)}
+
+/* ---- Inputs ---- */
+.input,.select,.textarea{
+  width:100%; min-height:48px; padding:var(--space-3) var(--space-4); background:var(--color-surface);
+  border:1px solid var(--color-border); border-radius:var(--radius-md); font-size:15px; color:var(--color-text-primary);
+  transition:border-color var(--duration-fast);
+}
+.input:focus,.select:focus,.textarea:focus{outline:none; border-color:var(--color-primary); box-shadow:0 0 0 3px var(--color-primary-light)}
+.input::placeholder{color:var(--color-text-muted)}
+.field{display:flex; flex-direction:column; gap:var(--space-2); margin-bottom:var(--space-4)}
+.field > label{font-size:14px; font-weight:500; color:var(--color-text-secondary)}
+
+/* ---- Badges / chips ---- */
+.badge{display:inline-flex; align-items:center; gap:var(--space-1); padding:3px var(--space-2);
+  border-radius:var(--radius-sm); font-size:12px; font-weight:500; line-height:1.4}
+.badge-success{background:var(--color-success-light); color:var(--color-success)}
+.badge-warning{background:var(--color-warning-light); color:var(--color-warning)}
+.badge-danger{background:var(--color-destructive-light); color:var(--color-destructive)}
+.badge-accent{background:var(--color-accent-light); color:var(--color-accent-hover)}
+.badge-neutral{background:var(--color-surface-raised); color:var(--color-text-secondary)}
+.badge-primary{background:var(--color-primary-light); color:var(--color-primary)}
+
+/* ---- Skeleton ---- */
+.skeleton{background:linear-gradient(90deg,var(--color-surface-raised) 25%,#ECE8E2 50%,var(--color-surface-raised) 75%);
+  background-size:200% 100%; animation:mesa-shimmer 1.3s infinite; border-radius:var(--radius-sm)}
+@keyframes mesa-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ---- Toast ---- */
+#mesa-toast{position:fixed; left:50%; bottom:calc(var(--space-8) + env(safe-area-inset-bottom,0)); transform:translateX(-50%);
+  z-index:9999; display:flex; flex-direction:column; gap:var(--space-2); align-items:center; pointer-events:none}
+.mesa-toast{background:var(--color-text-primary); color:#fff; padding:var(--space-3) var(--space-5); border-radius:var(--radius-full);
+  font-size:14px; box-shadow:var(--shadow-lg); animation:mesa-toast-in var(--duration-normal) var(--easing-decelerate)}
+.mesa-toast.err{background:var(--color-destructive)}
+.mesa-toast.ok{background:var(--color-success)}
+@keyframes mesa-toast-in{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:translateY(0)}}
+
+/* ---- Layout helpers ---- */
+.container{max-width:1180px; margin:0 auto; padding:0 var(--space-5)}
+.stack{display:flex; flex-direction:column}
+.row{display:flex; align-items:center}
+.between{display:flex; align-items:center; justify-content:space-between}
+.gap-1{gap:var(--space-1)}.gap-2{gap:var(--space-2)}.gap-3{gap:var(--space-3)}.gap-4{gap:var(--space-4)}
+.gap-5{gap:var(--space-5)}.gap-6{gap:var(--space-6)}.gap-8{gap:var(--space-8)}
+.grow{flex:1}.wrap{flex-wrap:wrap}.center{align-items:center;justify-content:center}
+.hidden{display:none !important}
+.divider{height:1px; background:var(--color-border); border:0}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important; scroll-behavior:auto !important}
+}
