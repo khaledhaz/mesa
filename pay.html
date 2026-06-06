@@ -834,10 +834,16 @@ body{background:var(--color-bg)}
   font-size:18px;font-weight:600;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;
-  /* Ensure 44px touch target via padding trick */
+  /* Expand touch target to ≥44×44px without affecting layout */
+  position:relative;
   -webkit-tap-highlight-color:transparent;
   transition:filter var(--duration-fast);
   flex-shrink:0;
+}
+.menu-item__stepper-btn::after{
+  content:'';
+  position:absolute;
+  inset:-6px; /* 32 + 12 = 44px effective tap area */
 }
 .menu-item__stepper-btn:hover{filter:brightness(0.88)}
 .menu-item__stepper-btn:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;}
@@ -1122,7 +1128,7 @@ body{background:var(--color-bg)}
   <div class="loyalty-card" id="loyalty-card" style="margin-top:var(--space-4)">
     <h3 id="loyalty-heading">Earn rewards</h3>
     <p id="loyalty-body">Join free with your phone number. We'll remember you next time.</p>
-    <p class="loyalty-teaser">Earn £5.00 back on your next visit</p>
+    <p class="loyalty-teaser" id="loyalty-teaser">Earn back on your next visit</p>
     <div class="field">
       <label for="loyalty-phone">Your phone number</label>
       <input type="tel" class="input" id="loyalty-phone" placeholder="+44 7700 000000">
@@ -1243,13 +1249,15 @@ body{background:var(--color-bg)}
   <div id="checkout-total-display" class="checkout-sheet-total amount"></div>
 
   <div class="express-label">Express checkout</div>
-  <button id="apple-pay-btn" class="apple-pay-btn" aria-label="Pay with Apple Pay">
+  <button id="apple-pay-btn" class="apple-pay-btn" aria-label="Pay with Apple Pay (Demo)">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
     Pay with Apple Pay
+    <span style="font-size:10px;opacity:0.7;margin-left:4px">(Demo)</span>
   </button>
-  <button id="google-pay-btn" class="google-pay-btn" aria-label="Pay with Google Pay">
+  <button id="google-pay-btn" class="google-pay-btn" aria-label="Pay with Google Pay (Demo)">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><text y="18" font-size="12" font-weight="bold" fill="#4285F4">G</text><text x="10" y="18" font-size="12" font-weight="500" fill="#333">Pay</text></svg>
     Pay with Google Pay
+    <span style="font-size:10px;color:var(--color-text-muted);margin-left:4px">(Demo)</span>
   </button>
 
   <div class="or-divider">or pay by card</div>
@@ -1301,7 +1309,7 @@ body{background:var(--color-bg)}
 </div><!-- #app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/mesa.js?v=2-ordering"></script>
+<script src="assets/mesa.js?v=3-audit"></script>
 <script>
 (function(){
 'use strict';
@@ -1320,21 +1328,22 @@ var state = {
   totalCents: 0,          // what this diner owes (before tip)
   paymentRecord: null,
   realtimeCh: null,
+  paid: false,            // PAY-TWICE guard: true after successful payment
 };
 
 // ---- cart state (keyed by menu_item_id) ----
 // { [menu_item_id]: { menu_item_id, name, unit_price_cents, qty } }
-var _cart = (function(){
-  try {
-    var saved = sessionStorage.getItem('mesa-cart-' + getCode());
-    if(saved) return JSON.parse(saved);
-  } catch(e){}
-  return {};
-})();
+// Hydration deferred to load() so state.code is known before reading sessionStorage.
+var _cart = {};
 
 // ---- utils ----
 var $ = MESA.el, $$ = MESA.els, m = MESA.money;
-function show(id){ $$('.screen').forEach(function(s){s.classList.remove('active')}); $(id).classList.add('active'); }
+function show(id){
+  var target = $(id);
+  if(!target){ console.warn('[mesa] show(): element not found for selector', id); return; }
+  $$('.screen').forEach(function(s){s.classList.remove('active')});
+  target.classList.add('active');
+}
 function getCode(){
   var p = new URLSearchParams(window.location.search).get('code');
   if(p) return p.toUpperCase();
@@ -1342,7 +1351,7 @@ function getCode(){
   if(h) return h.toUpperCase();
   return null;
 }
-function currencySym(c){ return {USD:'$',GBP:'£',EUR:'€',AED:'AED ',SAR:'SAR '}[c||'GBP']||'£'; }
+function currencySym(c){ return {USD:'$',GBP:'£',EUR:'€',AED:'AED ',SAR:'SAR ',AUD:'A$',CAD:'C$'}[c||'GBP']||'£'; }
 function mesaLogoSVG(color){
   var c = color||'currentColor';
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 32" height="28" fill="none" aria-label="mesa"><line x1="4" y1="10" x2="28" y2="10" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round"/><line x1="8" y1="10" x2="8" y2="26" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round"/><line x1="24" y1="10" x2="24" y2="26" stroke="'+c+'" stroke-width="2.5" stroke-linecap="round"/><line x1="8" y1="20" x2="24" y2="20" stroke="'+c+'" stroke-width="2" stroke-linecap="round" opacity="0.4"/><text x="38" y="24" font-family="\'Inter\',\'DM Sans\',system-ui,sans-serif" font-size="28" font-weight="500" letter-spacing="-0.04em" fill="'+c+'">mesa</text></svg>';
@@ -1488,6 +1497,8 @@ async function placeCartOrder(){
   var btn = document.getElementById('btn-place-order');
   if(!btn || btn.disabled) return;
   if(cartIsEmpty()){ MESA.toast('Add some items first', 'err'); return; }
+  // Fix 7: guard against missing restaurant or table
+  if(!state.restaurant || !state.table){ MESA.toast('Restaurant not loaded — please wait','err'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Placing…';
@@ -1516,6 +1527,8 @@ async function placeCartOrder(){
     updateCartBar();
     btn.disabled = false;
     btn.textContent = 'Place order';
+    // Fix 8: reset so menu re-renders fresh (reflects any menu changes)
+    _menuLoaded = false;
     MESA.toast('Order placed ✓', 'ok');
     // refresh into bill screen
     await load();
@@ -1553,14 +1566,32 @@ function renderBillItems(container, claimable){
         e.preventDefault();
         if(!state.myLabel){ openNameModal(function(){ handleClaim(e); }); return; }
         var alreadyMine = it.claimed_by === state.myLabel;
-        MESA.claimItem(it.id, alreadyMine ? null : state.myLabel).then(function(){
-          it.claimed_by = alreadyMine ? null : state.myLabel;
-          if(alreadyMine){ state.myItemIds = state.myItemIds.filter(function(x){return x!==it.id}); }
+        var optimisticLabel = alreadyMine ? null : state.myLabel;
+        // Fix 5: optimistic local update
+        it.claimed_by = optimisticLabel;
+        if(alreadyMine){ state.myItemIds = state.myItemIds.filter(function(x){return x!==it.id}); }
+        else { if(state.myItemIds.indexOf(it.id)<0) state.myItemIds.push(it.id); }
+        renderBillItems(container, true);
+        updateMyTotal();
+        MESA.claimItem(it.id, optimisticLabel).then(function(res){
+          // Fix 5: roll back if first-writer-wins means someone else already claimed it
+          if(!alreadyMine && res.data === null){
+            // Another diner claimed first — revert optimistic update
+            it.claimed_by = null; // real state unknown; realtime will correct it
+            state.myItemIds = state.myItemIds.filter(function(x){return x!==it.id});
+            renderBillItems(container, true);
+            updateMyTotal();
+            MESA.toast('Someone already grabbed that','err');
+          }
+        }).catch(function(){
+          // Roll back on network error
+          it.claimed_by = alreadyMine ? state.myLabel : null;
+          if(!alreadyMine){ state.myItemIds = state.myItemIds.filter(function(x){return x!==it.id}); }
           else { if(state.myItemIds.indexOf(it.id)<0) state.myItemIds.push(it.id); }
           renderBillItems(container, true);
           updateMyTotal();
-          div.setAttribute('aria-pressed', (!alreadyMine).toString());
-        }).catch(function(){ MESA.toast('Could not claim item — try again','err'); });
+          MESA.toast('Could not claim item — try again','err');
+        });
       }
       div.addEventListener('click', handleClaim);
       div.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); handleClaim(e); }});
@@ -1608,7 +1639,12 @@ function openNameModal(cb){
   modal.className = 'name-modal'; modal.id = 'name-modal';
   modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-labelledby','nm-heading');
   modal.innerHTML = '<div class="name-modal-card"><h3 id="nm-heading">What\'s your name?</h3><p>So your tablemates can see which items are yours.</p><div class="field"><label for="nm-input">Your first name</label><input type="text" class="input" id="nm-input" placeholder="Alex" autocomplete="given-name" autofocus maxlength="24"></div><button class="btn-pay" id="nm-confirm" style="width:100%;margin-top:8px;border-radius:var(--radius-full);min-height:52px">Got it</button></div>';
+  // Fix 15: hide main content from AT while modal is open
+  var _nmPrevEl = document.activeElement;
+  var appEl = document.getElementById('app');
+  if(appEl) appEl.setAttribute('aria-hidden','true');
   document.body.appendChild(modal);
+  trapFocus(modal);
   var inp = modal.querySelector('#nm-input');
   var btn = modal.querySelector('#nm-confirm');
   function confirm(){
@@ -1616,7 +1652,10 @@ function openNameModal(cb){
     if(!v) return;
     state.myLabel = v;
     sessionStorage.setItem('mesa-diner-name', v);
+    releaseFocusTrap();
+    if(appEl) appEl.removeAttribute('aria-hidden');
     modal.remove();
+    if(_nmPrevEl){ try{ _nmPrevEl.focus(); }catch(e){} }
     if(_nameCallback){ var fn = _nameCallback; _nameCallback=null; fn(); }
   }
   btn.addEventListener('click', confirm);
@@ -1624,23 +1663,77 @@ function openNameModal(cb){
   inp.focus();
 }
 
+// ---- focus-trap helpers (Fix 15) ----
+var _focusTrapEl = null;
+var _focusTrapPrevEl = null;
+var _trapHandler = null;
+
+var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+function trapFocus(container){
+  _focusTrapEl = container;
+  _trapHandler = function(e){
+    if(e.key !== 'Tab') return;
+    var focusable = Array.prototype.slice.call(container.querySelectorAll(FOCUSABLE)).filter(function(el){
+      return !el.closest('[hidden]') && el.offsetParent !== null;
+    });
+    if(!focusable.length){ e.preventDefault(); return; }
+    var first = focusable[0], last = focusable[focusable.length-1];
+    if(e.shiftKey){
+      if(document.activeElement === first){ e.preventDefault(); last.focus(); }
+    } else {
+      if(document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  };
+  document.addEventListener('keydown', _trapHandler);
+}
+
+function releaseFocusTrap(){
+  if(_trapHandler) document.removeEventListener('keydown', _trapHandler);
+  _trapHandler = null; _focusTrapEl = null;
+}
+
 // ---- sheet helpers ----
 function openSheet(id){
   var overlay = $('#sheet-overlay'), sheet = $(id);
+  if(!overlay || !sheet) return;
+  // Fix 15: hide main app content from AT while sheet is open
+  var appEl = document.getElementById('app');
+  _focusTrapPrevEl = document.activeElement;
+  if(appEl) appEl.setAttribute('aria-hidden','true');
+  // The sheet itself must NOT be aria-hidden
+  sheet.removeAttribute('aria-hidden');
   overlay.classList.add('visible');
-  requestAnimationFrame(function(){ sheet.classList.add('open'); });
+  requestAnimationFrame(function(){
+    sheet.classList.add('open');
+    // Move focus into the sheet's first focusable element
+    var firstFocusable = sheet.querySelector(FOCUSABLE);
+    if(firstFocusable) firstFocusable.focus();
+    trapFocus(sheet);
+  });
   overlay.onclick = function(){ closeAllSheets(); };
-  var close = sheet.querySelector('[aria-label="Close"],#'+id.replace('sheet-','')+'_close,[id$="-close"]');
 }
 function closeAllSheets(){
+  releaseFocusTrap();
   $$('.bottom-sheet').forEach(function(s){ s.classList.remove('open'); });
   $('#sheet-overlay').classList.remove('visible');
+  // Fix 15: restore aria-hidden and focus
+  var appEl = document.getElementById('app');
+  if(appEl) appEl.removeAttribute('aria-hidden');
+  if(_focusTrapPrevEl){ try{ _focusTrapPrevEl.focus(); }catch(e){} _focusTrapPrevEl = null; }
 }
 
 // ---- load data ----
 async function load(){
   state.code = getCode();
   if(!state.code){ show('#screen-notfound'); return; }
+
+  // Fix 6: hydrate cart after state.code is known, keyed by real code
+  try {
+    var savedCart = sessionStorage.getItem('mesa-cart-' + state.code);
+    if(savedCart) _cart = JSON.parse(savedCart);
+  } catch(e){}
+
   try {
     var data = await MESA.loadTableBill(state.code);
     if(data.notFound){ show('#screen-notfound'); return; }
@@ -1692,11 +1785,19 @@ function renderBill(){
   renderPresence();
   // items
   renderBillItems($('#bill-items-list'), false);
-  // continue btn
+  // continue btn — Fix 1: show paid state if already paid
   var btn = $('#btn-how-pay');
   if(btn){
-    if(state.items.length===0){ btn.disabled=true; btn.textContent='Nothing to pay yet'; }
-    else { btn.disabled=false; btn.textContent='How would you like to pay?'; }
+    if(state.paid){
+      btn.disabled=true;
+      btn.textContent='Bill paid — thank you!';
+    } else if(state.items.length===0){
+      btn.disabled=true;
+      btn.textContent='Nothing to pay yet';
+    } else {
+      btn.disabled=false;
+      btn.textContent='How would you like to pay?';
+    }
   }
   show('#screen-bill');
 }
@@ -1735,10 +1836,46 @@ function renderPresence(){
 // ---- realtime ----
 function subscribeRealtime(){
   if(!state.session) return;
+
+  // Fix 3: remove previous channel before subscribing to prevent duplicate channels
+  if(state.realtimeCh){
+    try { MESA.sb.removeChannel(state.realtimeCh); } catch(e){}
+    state.realtimeCh = null;
+  }
+
   try {
     state.realtimeCh = MESA.sb.channel('mesa-items-'+state.session.id)
       .on('postgres_changes',{event:'*',schema:'public',table:'mesa_order_items',filter:'session_id=eq.'+state.session.id},
         function(payload){
+          var eventType = payload.eventType || payload.type;
+
+          // Fix 2: handle INSERT — staff-added items appear live
+          if(eventType === 'INSERT'){
+            var newItem = payload.new;
+            if(newItem && !state.items.some(function(x){ return x.id === newItem.id; })){
+              state.items.push(newItem);
+              renderBillItems($('#bill-items-list'), false);
+              renderBillItems($('#claim-items-list'), true);
+              renderPresence(); updateMyTotal();
+              renderBill();
+            }
+            return;
+          }
+
+          // Fix 2: handle DELETE — voided items disappear live
+          if(eventType === 'DELETE'){
+            var deletedId = payload.old && payload.old.id;
+            if(deletedId){
+              state.items = state.items.filter(function(x){ return x.id !== deletedId; });
+              renderBillItems($('#bill-items-list'), false);
+              renderBillItems($('#claim-items-list'), true);
+              renderPresence(); updateMyTotal();
+              renderBill();
+            }
+            return;
+          }
+
+          // UPDATE: existing row changed (e.g. claimed_by)
           var updated = payload.new;
           if(!updated) return;
           for(var i=0;i<state.items.length;i++){
@@ -1756,6 +1893,8 @@ function subscribeRealtime(){
 
 // ---- split sheet ----
 function openSplitSheet(){
+  // Fix 1: PAY-TWICE guard
+  if(state.paid){ MESA.toast('This bill has already been paid','err'); return; }
   // update stepper sub-label
   var math = billTotal();
   var cur = state.restaurant ? state.restaurant.currency : 'GBP';
@@ -1768,7 +1907,12 @@ function openSplitSheet(){
 function getSelectedSplitAmt(){
   if(state.splitMode==='full') return billTotal().total_before_tip_cents;
   if(state.splitMode==='even') return Math.ceil(billTotal().total_before_tip_cents / state.splitN);
-  if(state.splitMode==='claim') return mySubtotal(); // no service on claim-only for simplicity
+  if(state.splitMode==='claim'){
+    // Fix 4: include proportional service charge so amount matches tip screen
+    var mySub = mySubtotal();
+    var svcPct = state.restaurant ? Number(state.restaurant.service_charge_pct || 0) / 100 : 0;
+    return mySub + Math.round(mySub * svcPct);
+  }
   if(state.splitMode==='custom'){
     var v = parseFloat($('#custom-amount-input').value)||0;
     return Math.round(v*100);
@@ -1873,12 +2017,14 @@ function enablePayBtn(){
 
 // ---- checkout sheet ----
 function openCheckoutSheet(){
+  // Fix 1: PAY-TWICE guard
+  if(state.paid){ MESA.toast('This bill has already been paid','err'); return; }
   var cur = state.restaurant?state.restaurant.currency:'GBP';
   var total = state.totalCents + state.tipCents;
   var ctd = $('#checkout-total-display'); if(ctd) ctd.textContent = m(total,cur);
   var payCardBtn = $('#btn-pay-card'); if(payCardBtn) payCardBtn.textContent = 'Pay '+m(total,cur)+' securely';
-  var appleBtn = $('#apple-pay-btn'); if(appleBtn) appleBtn.setAttribute('aria-label','Pay with Apple Pay, '+m(total,cur));
-  var googleBtn = $('#google-pay-btn'); if(googleBtn) googleBtn.setAttribute('aria-label','Pay with Google Pay, '+m(total,cur));
+  var appleBtn = $('#apple-pay-btn'); if(appleBtn) appleBtn.setAttribute('aria-label','Pay with Apple Pay (Demo), '+m(total,cur));
+  var googleBtn = $('#google-pay-btn'); if(googleBtn) googleBtn.setAttribute('aria-label','Pay with Google Pay (Demo), '+m(total,cur));
   openSheet('#sheet-checkout');
 }
 
@@ -1912,9 +2058,15 @@ async function doPayment(method){
 }
 
 async function handlePay(method){
+  // Fix 1: PAY-TWICE guard
+  if(state.paid){ MESA.toast('This bill has already been paid','err'); return; }
+
   var overlay = $('#processing-overlay'); if(overlay) overlay.style.display='flex';
   var allInputs = $$('#sheet-checkout input'); allInputs.forEach(function(i){i.disabled=true;});
   var payCardBtn = $('#btn-pay-card'); if(payCardBtn) payCardBtn.disabled=true;
+  // Fix 16: disable express buttons during processing to prevent concurrent submits
+  var appleBtn = $('#apple-pay-btn'); if(appleBtn) appleBtn.disabled=true;
+  var googleBtn = $('#google-pay-btn'); if(googleBtn) googleBtn.disabled=true;
   var errBanner = $('#checkout-error-banner'); if(errBanner) errBanner.style.display='none';
 
   // simulate ~1.2s processing
@@ -1922,6 +2074,7 @@ async function handlePay(method){
   var ok = await doPayment(method);
 
   if(ok){
+    state.paid = true; // Fix 1: mark paid to block re-entry
     if(overlay) overlay.style.display='none';
     closeAllSheets();
     setTimeout(function(){ showSuccess(); }, 300);
@@ -1929,6 +2082,9 @@ async function handlePay(method){
     if(overlay) overlay.style.display='none';
     allInputs.forEach(function(i){i.disabled=false;});
     if(payCardBtn){ payCardBtn.disabled=false; payCardBtn.textContent='Pay again'; }
+    // Re-enable express buttons on failure
+    if(appleBtn) appleBtn.disabled=false;
+    if(googleBtn) googleBtn.disabled=false;
     if(errBanner){ errBanner.style.display='flex'; }
     var cardNum = $('#card-number'); if(cardNum) cardNum.focus();
   }
@@ -1977,9 +2133,11 @@ function showSuccess(){
     addRow('Total paid', m(total,cur), true);
   }
 
-  // loyalty card heading
+  // loyalty card heading — Fix 12: use restaurant currency in teaser
   var lh = $('#loyalty-heading'); if(lh) lh.textContent = 'Earn rewards at '+(rest?rest.name:'');
   var lb = $('#loyalty-body'); if(lb) lb.textContent = 'Join free with your phone number. We\'ll remember you next time.';
+  var lt = document.getElementById('loyalty-teaser');
+  if(lt){ var loyaltySym = currencySym(cur); lt.textContent = 'Earn '+loyaltySym+'5.00 back on your next visit'; }
 
   // review card
   var rb = $('#review-body'); if(rb) rb.textContent = 'Leave a quick Google review for '+(rest?rest.name:'')+'. It takes 30 seconds.';
@@ -2369,24 +2527,33 @@ function attachNavScrollSpy(activeCats){
     });
   }
 
-  // Capture-phase scroll listener on document: catches scroll from whatever element
-  // actually scrolls (here <body> is the scroller, not window), and any nested scroller.
+  // Fix 13: single scroll listener on window (body scrolls, window fires)
   var _scrollHandler = function(){ updateActiveChip(); };
-  document.addEventListener('scroll', _scrollHandler, {passive:true, capture:true});
   window.addEventListener('scroll', _scrollHandler, {passive:true});
 
   // Run once immediately so initial state is correct
   updateActiveChip();
 
-  // Clean up when leaving menu screen (avoid memory leak / stale listener)
+  // Fix 13: remove listener on ANY exit from menu screen, not only back button
+  function teardownScrollSpy(){
+    window.removeEventListener('scroll', _scrollHandler);
+  }
+
   var backBtn = document.getElementById('back-from-menu');
   if(backBtn){
-    backBtn.addEventListener('click', function onBack(){
-      document.removeEventListener('scroll', _scrollHandler, {capture:true});
-      window.removeEventListener('scroll', _scrollHandler);
-      backBtn.removeEventListener('click', onBack);
-    }, {once:true});
+    backBtn.addEventListener('click', teardownScrollSpy, {once:true});
   }
+  // Also tear down when bill/tip/claim/success screens become active
+  // (covers programmatic show() calls like place-order redirect)
+  var _spyObserver = new MutationObserver(function(){
+    var menuScreen = document.getElementById('screen-menu');
+    if(menuScreen && !menuScreen.classList.contains('active')){
+      teardownScrollSpy();
+      _spyObserver.disconnect();
+    }
+  });
+  var menuScreenEl = document.getElementById('screen-menu');
+  if(menuScreenEl) _spyObserver.observe(menuScreenEl, {attributes:true, attributeFilter:['class']});
 }
 
 // ---- Fix 1: lightbox ----
@@ -2429,16 +2596,26 @@ function attachNavScrollSpy(activeCats){
     // prevent background scroll
     _prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Fix 15: hide main app from AT while lightbox is open
+    var appEl = document.getElementById('app');
+    if(appEl) appEl.setAttribute('aria-hidden','true');
+    lightbox.removeAttribute('aria-hidden');
     lightbox.classList.add('lb-open');
-    // move focus to close button
-    setTimeout(function(){ lbClose && lbClose.focus(); }, 50);
+    // move focus to close button and trap Tab within lightbox
+    setTimeout(function(){
+      if(lbClose) lbClose.focus();
+      trapFocus(lightbox);
+    }, 50);
   }
 
   function closeLightbox(){
     if(!lightbox) return;
+    releaseFocusTrap();
     lightbox.classList.remove('lb-open');
     document.body.style.overflow = _prevOverflow;
-    // restore focus to trigger
+    // Fix 15: restore aria-hidden and focus
+    var appEl = document.getElementById('app');
+    if(appEl) appEl.removeAttribute('aria-hidden');
     if(_triggerEl){
       try{ _triggerEl.focus(); } catch(e){}
       _triggerEl = null;
@@ -2576,17 +2753,24 @@ function init(){
     openTipScreen();
   });
 
-  // breakdown toggle
+  // Fix 10: breakdown toggle — keep ONE static chevron; no innerHTML reassignment
   var bt = $('#breakdown-toggle');
   if(bt) bt.addEventListener('click', function(){
     var body = $('#breakdown-body');
-    var chevron = $('#breakdown-chevron');
-    var open = !body.hidden;
-    body.hidden = open;
-    bt.setAttribute('aria-expanded', (!open).toString());
-    if(chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
-    bt.textContent = open ? 'See breakdown' : 'Hide breakdown';
-    bt.innerHTML += ' <svg id="breakdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transition:transform var(--duration-fast);transform:'+(open?'':'rotate(180deg)')+'"><path d="M6 9l6 6 6-6"/></svg>';
+    var chevron = document.getElementById('breakdown-chevron');
+    var nowOpen = body.hidden; // body.hidden===true means currently closed, click will open it
+    body.hidden = !nowOpen;
+    bt.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+    // Update only the text node, preserving the SVG child
+    var textNodes = Array.prototype.filter.call(bt.childNodes, function(n){ return n.nodeType === 3; });
+    if(textNodes.length){
+      textNodes[0].textContent = nowOpen ? 'Hide breakdown' : 'See breakdown';
+    } else {
+      // No text node yet — insert before SVG
+      var tn = document.createTextNode(nowOpen ? 'Hide breakdown' : 'See breakdown');
+      bt.insertBefore(tn, bt.firstChild);
+    }
+    if(chevron) chevron.style.transform = nowOpen ? 'rotate(180deg)' : '';
   });
 
   // custom tip toggle
@@ -2600,7 +2784,8 @@ function init(){
   // custom tip input
   var cti = $('#custom-tip-input');
   if(cti) cti.addEventListener('input', function(){
-    var v = parseFloat(cti.value)||0;
+    // Fix 9: clamp to ≥0 so negative input can't lower the total
+    var v = Math.max(0, parseFloat(cti.value)||0);
     state.tipCents = Math.round(v*100); state.tipPct = 'custom';
     $$('.tip-chip').forEach(function(c){ c.classList.remove('selected'); c.setAttribute('aria-pressed','false'); });
     updateTipTotal(); enablePayBtn();
@@ -2648,18 +2833,30 @@ function init(){
     ce.value = v;
   });
 
-  // loyalty join
+  // loyalty join — Fix 12: validate phone, returning-member greeting
   var bjl = $('#btn-join-loyalty');
   if(bjl) bjl.addEventListener('click', async function(){
     var phone = ($('#loyalty-phone')||{}).value||'';
     phone = phone.trim();
     if(!phone){ MESA.toast('Please enter your phone number','err'); return; }
+    // Fix 12: phone validation — at least 7 digits, allow +, spaces, dashes, parens, dots
+    if(!/^\+?[\d\s\-().]{7,15}$/.test(phone)){
+      MESA.toast('Please enter a valid phone number','err'); return;
+    }
     bjl.disabled=true; bjl.textContent='Joining…';
     try {
-      await MESA.joinLoyalty(state.restaurant.id, phone, state.myLabel||'Guest');
+      var res = await MESA.joinLoyalty(state.restaurant.id, phone, state.myLabel||'Guest');
+      if(res.error) throw res.error;
+      var member = res.data && res.data[0];
       var lc = $('#loyalty-card');
-      if(lc) lc.innerHTML='<p style="font-size:15px;font-weight:500;color:var(--color-accent-foreground)">Welcome! 10 points earned. We\'ll recognize you next time.</p>';
-      MESA.toast('You\'re in! 10 points earned.','ok');
+      if(lc){
+        // Fix 12: greet returning members differently
+        var msg = member && member.is_returning
+          ? 'Welcome back! You have '+((member.points)||0)+' points and '+((member.visits)||0)+' visits. Keep it up!'
+          : 'Welcome! 10 points earned. We\'ll recognize you next time.';
+        lc.innerHTML='<p style="font-size:15px;font-weight:500;color:var(--color-accent-foreground)">'+MESA.esc(msg)+'</p>';
+      }
+      MESA.toast(member && member.is_returning ? 'Welcome back!' : 'You\'re in! 10 points earned.','ok');
     } catch(e){
       bjl.disabled=false; bjl.textContent='Join and earn rewards';
       MESA.toast('Could not join — try again','err');

@@ -476,9 +476,19 @@ body{background:var(--color-bg);min-height:100vh}
   </div>
   <div class="drawer-body">
     <input type="hidden" id="item-id">
+    <input type="hidden" id="item-photo-url">
     <div class="field"><label for="item-name">Item name</label><input id="item-name" class="input" type="text" placeholder="e.g. Grilled Salmon"></div>
     <div class="field"><label for="item-desc">Description (optional)</label><textarea id="item-desc" class="textarea input" rows="3" style="min-height:80px;resize:vertical" placeholder="Short description…"></textarea></div>
     <div class="field"><label for="item-price">Price ($)</label><input id="item-price" class="input" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="field">
+      <label>Photo</label>
+      <div id="item-photo-preview-wrap" style="display:none;margin-bottom:var(--space-2);position:relative;width:fit-content">
+        <img id="item-photo-preview" src="" alt="Item photo preview" style="width:120px;height:120px;object-fit:cover;border-radius:var(--radius-md);border:1px solid var(--color-border)">
+        <button type="button" id="item-photo-remove" aria-label="Remove photo" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--color-destructive);color:#fff;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">&#x2715;</button>
+      </div>
+      <input id="item-photo-file" type="file" accept="image/*" class="input" style="padding:var(--space-2);margin-bottom:var(--space-2)" aria-label="Upload photo">
+      <input id="item-photo-paste-url" class="input" type="url" placeholder="Or paste image URL…" style="margin-bottom:0">
+    </div>
     <div class="field"><label for="item-allergens">Allergens (comma-separated)</label><input id="item-allergens" class="input" type="text" placeholder="e.g. gluten, dairy, nuts"></div>
     <div class="field" style="flex-direction:row;align-items:center;gap:var(--space-3)">
       <label class="toggle" aria-label="Item available">
@@ -507,6 +517,7 @@ body{background:var(--color-bg);min-height:100vh}
     <div style="padding:0 0 var(--space-4)">
       <div class="field"><label for="table-label">Table name or number</label><input id="table-label" class="input" type="text" placeholder="e.g. Table 5 or Patio A"></div>
       <div class="field"><label for="table-count">How many tables? (1–50)</label><input id="table-count" class="input" type="number" min="1" max="50" value="1"></div>
+      <div class="field"><label for="table-seats">Seats per table</label><input id="table-seats" class="input" type="number" min="1" max="50" value="4"></div>
     </div>
     <div style="display:flex;gap:var(--space-3)">
       <button class="btn btn-primary" id="table-save-btn" style="flex:1;border-radius:var(--radius-md)">Generate QR codes</button>
@@ -542,8 +553,69 @@ body{background:var(--color-bg);min-height:100vh}
   </div>
 </div>
 
+<!-- CATEGORY EDIT MODAL -->
+<div class="modal-overlay" id="cat-modal" role="dialog" aria-modal="true" aria-labelledby="cat-modal-title">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <h2 class="t-h2" id="cat-modal-title">Edit category</h2>
+      <button class="icon-btn" id="cat-modal-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:0 0 var(--space-4)">
+      <input type="hidden" id="cat-modal-id">
+      <div class="field"><label for="cat-modal-name">Category name</label><input id="cat-modal-name" class="input" type="text" placeholder="e.g. Starters"></div>
+    </div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="cat-modal-save" style="flex:1;border-radius:var(--radius-md)">Save</button>
+      <button class="btn" id="cat-modal-delete" style="border-radius:var(--radius-md);background:var(--color-destructive-light);color:var(--color-destructive);border:1px solid var(--color-destructive)">Delete</button>
+      <button class="btn btn-secondary" id="cat-modal-cancel" style="border-radius:var(--radius-md)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ITEMS TO ORDER MODAL -->
+<div class="modal-overlay" id="add-items-modal" role="dialog" aria-modal="true" aria-labelledby="add-items-modal-title">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h2 class="t-h2" id="add-items-modal-title">Add items</h2>
+      <button class="icon-btn" id="add-items-modal-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="add-items-modal-body" style="max-height:400px;overflow-y:auto;margin-bottom:var(--space-4)"></div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="add-items-modal-confirm" style="flex:1;border-radius:var(--radius-md)">Add to order</button>
+      <button class="btn btn-secondary" id="add-items-modal-cancel" style="border-radius:var(--radius-md)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT TABLE MODAL -->
+<div class="modal-overlay" id="edit-table-modal" role="dialog" aria-modal="true" aria-labelledby="edit-table-modal-title">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <h2 class="t-h2" id="edit-table-modal-title">Edit table</h2>
+      <button class="icon-btn" id="edit-table-modal-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:0 0 var(--space-4)">
+      <input type="hidden" id="edit-table-id">
+      <div class="field"><label for="edit-table-label">Table name</label><input id="edit-table-label" class="input" type="text" placeholder="e.g. Table 5"></div>
+      <div class="field"><label for="edit-table-seats">Seats</label><input id="edit-table-seats" class="input" type="number" min="1" max="50" value="4"></div>
+    </div>
+    <div style="display:flex;gap:var(--space-3)">
+      <button class="btn btn-primary" id="edit-table-save" style="flex:1;border-radius:var(--radius-md)">Save</button>
+      <button class="btn btn-secondary" id="edit-table-cancel" style="border-radius:var(--radius-md)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT STAFF MODAL (reused staff-modal for add, this for edit) -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/mesa.js"></script>
+<script src="assets/mesa.js?v=3-audit"></script>
 <script>
 (function(){
 'use strict';
@@ -551,7 +623,7 @@ var sb = MESA.sb;
 var $ = MESA.el, $$ = MESA.els, H = MESA.h, esc = MESA.esc, toast = MESA.toast, money = MESA.money;
 
 /* ---- state ---- */
-var state = { restaurant:null, rid:null, currentSection:'floor', currentCat:null, floorFilter:'all', floorChannel:null, analyticsRange:'today' };
+var state = { restaurant:null, rid:null, currentSection:'floor', currentCat:null, floorFilter:'all', floorChannel:null, analyticsRange:'today', settingsWired:false };
 
 /* ---- routing ---- */
 function route(hash){
@@ -655,7 +727,7 @@ async function initApp(){
 }
 
 sb.auth.onAuthStateChange(function(event){
-  if(event==='SIGNED_IN') initApp();
+  if(event==='SIGNED_IN' && !state.restaurant) initApp();
 });
 
 /* -------- FLOOR BOARD -------- */
@@ -718,7 +790,24 @@ function renderFloor(){
   }).join('');
   // click handlers
   $$('.table-card').forEach(function(card){
-    function openBill(){ if(card.dataset.sid) showBillModal(card.dataset.sid, card.dataset.label); }
+    function openBill(){
+      if(card.dataset.sid){
+        showBillModal(card.dataset.sid, card.dataset.label, card.dataset.tid);
+      } else {
+        // available table — offer to open session
+        if(confirm('Table "'+card.dataset.label+'" is available. Open a new session?')){
+          (async function(){
+            var {error,session_id,order_id} = await MESA.startTableOrder(state.rid, card.dataset.tid);
+            if(error){ toast('Error opening session: '+error,'err'); return; }
+            toast('Session opened','ok');
+            // refresh floor
+            var {data} = await sb.from('v_mesa_table_status').select('*').eq('restaurant_id', state.rid).order('label');
+            if(data){ floorData=data; renderFloor(); }
+            if(session_id) showBillModal(session_id, card.dataset.label, card.dataset.tid);
+          })();
+        }
+      }
+    }
     card.addEventListener('click', openBill);
     card.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openBill(); } });
   });
@@ -734,6 +823,13 @@ function subscribeFloor(){
   state.floorChannel = sb.channel('floor-'+state.rid)
     .on('postgres_changes',{event:'*',schema:'public',table:'mesa_sessions',filter:'restaurant_id=eq.'+state.rid}, reload)
     .on('postgres_changes',{event:'*',schema:'public',table:'mesa_payments',filter:'restaurant_id=eq.'+state.rid}, reload)
+    .on('postgres_changes',{event:'*',schema:'public',table:'mesa_order_items',filter:'restaurant_id=eq.'+state.rid}, async function(){
+      await reload();
+      // if bill modal is open for this restaurant, refresh it too
+      if($('#bill-modal').classList.contains('open') && billModalState.sessionId){
+        await renderBillModalBody();
+      }
+    })
     .subscribe();
 }
 
@@ -754,26 +850,178 @@ function renderSkeletonCards(n){
 }
 
 /* ---- BILL MODAL ---- */
-async function showBillModal(sessionId, label){
+var billModalState = { sessionId:null, label:null, tableId:null };
+
+async function showBillModal(sessionId, label, tableId){
+  billModalState.sessionId = sessionId;
+  billModalState.label = label;
+  billModalState.tableId = tableId || null;
   var modal = $('#bill-modal');
   var body = $('#bill-modal-body');
   $('#bill-modal-title').textContent = label || 'Table bill';
   body.innerHTML = '<div class="skeleton" style="height:200px;border-radius:var(--radius-md)"></div>';
   modal.classList.add('open');
-  var {data:bill} = await sb.from('v_mesa_session_bill').select('*').eq('session_id', sessionId).maybeSingle();
-  var {data:items} = await sb.from('mesa_order_items').select('name,unit_price_cents,qty,claimed_by').eq('session_id', sessionId);
-  var cur = state.restaurant ? state.restaurant.currency : 'GBP';
-  if(!bill){ body.innerHTML='<p style="color:var(--color-text-secondary);padding:var(--space-4)">No bill data available.</p>'; return; }
-  var itemsHtml = (items||[]).map(function(it){
-    return '<div class="bill-line"><span>'+esc(it.name)+(it.qty>1?' ×'+it.qty:'')+(it.claimed_by?' <small style="color:var(--color-text-muted)">('+esc(it.claimed_by)+')</small>':'')+'</span><span class="num">'+money(it.unit_price_cents*it.qty, cur)+'</span></div>';
-  }).join('');
-  body.innerHTML = '<div class="bill-modal-items">'+itemsHtml+'</div>'
-    +'<div class="bill-total-row"><span>Subtotal</span><span class="num">'+money(bill.subtotal_cents, cur)+'</span></div>'
-    +(bill.service_charge_cents>0?'<div class="bill-line"><span>Service charge</span><span class="num">'+money(bill.service_charge_cents, cur)+'</span></div>':'')
-    +(bill.tips_collected_cents>0?'<div class="bill-line" style="color:var(--color-success)"><span>Tips</span><span class="num">'+money(bill.tips_collected_cents, cur)+'</span></div>':'')
-    +'<div class="bill-total-row" style="font-size:18px"><span>Total paid</span><span class="num">'+money(bill.paid_cents, cur)+'</span></div>'
-    +'<p style="font-size:13px;color:var(--color-text-muted);margin-top:var(--space-3)">Status: <strong>'+esc(bill.status)+'</strong> · Server: '+(esc(bill.server_name||'—'))+'</p>';
+  await renderBillModalBody();
 }
+
+async function renderBillModalBody(){
+  var sessionId = billModalState.sessionId;
+  if(!sessionId) return;
+  var body = $('#bill-modal-body');
+  var cur = state.restaurant ? state.restaurant.currency : 'GBP';
+  var [{data:bill},{data:items},{data:sess}] = await Promise.all([
+    sb.from('v_mesa_session_bill').select('*').eq('session_id', sessionId).maybeSingle(),
+    sb.from('mesa_order_items').select('id,name,unit_price_cents,qty,claimed_by').eq('session_id', sessionId),
+    sb.from('mesa_sessions').select('id,status,order_id').eq('id', sessionId).maybeSingle()
+  ]);
+  if(!bill && !sess){ body.innerHTML='<p style="color:var(--color-text-secondary);padding:var(--space-4)">No session data available.</p>'; return; }
+  var status = (sess && sess.status) || (bill && bill.status) || 'open';
+  var orderId = sess && sess.order_id;
+  var itemsArr = items||[];
+
+  var itemsHtml = itemsArr.map(function(it){
+    return '<div class="bill-line" style="align-items:center;gap:var(--space-2)">'
+      +'<span style="flex:1">'+esc(it.name)+(it.claimed_by?' <small style="color:var(--color-text-muted)">('+esc(it.claimed_by)+')</small>':'')+'</span>'
+      +'<span style="display:flex;align-items:center;gap:4px">'
+        +(it.qty>1
+          ? '<input type="number" min="1" value="'+it.qty+'" data-oid="'+esc(it.id)+'" aria-label="Qty for '+esc(it.name)+'" style="width:52px;text-align:center;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:2px 4px;font-size:13px" class="bill-qty-inp">'
+          : '<span class="num" style="font-size:13px">×1</span>')
+        +'<span class="num" style="min-width:60px;text-align:right">'+money(it.unit_price_cents*(it.qty||1), cur)+'</span>'
+        +'<button class="icon-btn void-item-btn" data-oid="'+esc(it.id)+'" data-name="'+esc(it.name)+'" aria-label="Void '+esc(it.name)+'" style="width:28px;height:28px;color:var(--color-destructive)" title="Void item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
+      +'</span>'
+      +'</div>';
+  }).join('');
+
+  var summaryHtml = bill
+    ? '<div class="bill-total-row"><span>Subtotal</span><span class="num">'+money(bill.subtotal_cents, cur)+'</span></div>'
+      +(bill.service_charge_cents>0?'<div class="bill-line"><span>Service charge</span><span class="num">'+money(bill.service_charge_cents, cur)+'</span></div>':'')
+      +(bill.tips_collected_cents>0?'<div class="bill-line" style="color:var(--color-success)"><span>Tips</span><span class="num">'+money(bill.tips_collected_cents, cur)+'</span></div>':'')
+      +'<div class="bill-total-row" style="font-size:18px"><span>Total paid</span><span class="num">'+money(bill.paid_cents, cur)+'</span></div>'
+      +'<p style="font-size:13px;color:var(--color-text-muted);margin-top:var(--space-3)">Status: <strong>'+esc(status)+'</strong>'+(bill.server_name?' · Server: '+esc(bill.server_name):'')+'</p>'
+    : '<p style="font-size:13px;color:var(--color-text-muted);margin-top:var(--space-3)">Status: <strong>'+esc(status)+'</strong></p>';
+
+  // status action buttons
+  var footerBtns = '';
+  if(status==='open'||status==='seated'||status==='scanning'){
+    footerBtns += '<button class="btn btn-primary session-action-btn" data-action="paid" style="border-radius:var(--radius-md)">Mark paid</button>';
+    footerBtns += '<button class="btn btn-secondary session-action-btn" data-action="closed" style="border-radius:var(--radius-md)">Close session</button>';
+  }
+  if(status==='paying'){
+    footerBtns += '<button class="btn btn-primary session-action-btn" data-action="paid" style="border-radius:var(--radius-md)">Mark paid</button>';
+  }
+  if(status==='paid'||status==='closed'){
+    footerBtns += '<button class="btn btn-secondary session-action-btn" data-action="open" style="border-radius:var(--radius-md)">Reopen session</button>';
+  }
+
+  body.innerHTML = (itemsArr.length
+    ? '<div class="bill-modal-items">'+itemsHtml+'</div>'
+    : '<p style="padding:var(--space-3);color:var(--color-text-muted);font-size:14px">No items yet.</p>')
+    + summaryHtml
+    + '<div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-top:var(--space-4)">'
+      + '<button class="btn btn-secondary" id="bill-add-items-btn" style="border-radius:var(--radius-md)">+ Add items</button>'
+      + footerBtns
+    + '</div>';
+
+  // wire void buttons
+  $$('.void-item-btn', body).forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      if(!confirm('Void "'+btn.dataset.name+'"?')) return;
+      var {error} = await sb.from('mesa_order_items').delete().eq('id', btn.dataset.oid);
+      if(error){ toast('Error voiding item','err'); return; }
+      toast('Item voided','ok');
+      await renderBillModalBody();
+    });
+  });
+
+  // wire qty editors
+  $$('.bill-qty-inp', body).forEach(function(inp){
+    inp.addEventListener('change', async function(){
+      var qty = Math.max(1, parseInt(this.value)||1);
+      this.value = qty;
+      var {error} = await sb.from('mesa_order_items').update({qty:qty}).eq('id', this.dataset.oid);
+      if(error){ toast('Error updating qty','err'); return; }
+      await renderBillModalBody();
+    });
+  });
+
+  // wire session status buttons
+  $$('.session-action-btn', body).forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      var action = btn.dataset.action;
+      var {error} = await sb.from('mesa_sessions').update({status:action}).eq('id', sessionId);
+      if(error){ toast('Error updating session','err'); return; }
+      toast('Session '+action,'ok');
+      await renderBillModalBody();
+      // refresh floor
+      var {data} = await sb.from('v_mesa_table_status').select('*').eq('restaurant_id', state.rid).order('label');
+      if(data){ floorData=data; renderFloor(); }
+    });
+  });
+
+  // wire add items button
+  var addBtn = $('#bill-add-items-btn');
+  if(addBtn) addBtn.addEventListener('click', async function(){
+    await openAddItemsModal(sessionId, orderId);
+  });
+}
+
+async function openAddItemsModal(sessionId, orderId){
+  var modal = $('#add-items-modal');
+  var body = $('#add-items-modal-body');
+  body.innerHTML = '<div class="skeleton" style="height:200px;border-radius:var(--radius-md)"></div>';
+  modal.classList.add('open');
+  // load all menu items
+  var {data:cats} = await sb.from('mesa_menu_categories').select('id,name').eq('restaurant_id',state.rid).order('sort').order('name');
+  var {data:allItems} = await sb.from('mesa_menu_items').select('id,name,price_cents,category_id').eq('restaurant_id',state.rid).eq('is_available',true).order('name');
+  var cur = state.restaurant ? state.restaurant.currency : 'GBP';
+  var catMap={};
+  (cats||[]).forEach(function(c){ catMap[c.id]=c.name; });
+  // group by category
+  var grouped={};
+  (allItems||[]).forEach(function(it){
+    var cn = catMap[it.category_id]||'Other';
+    if(!grouped[cn]) grouped[cn]=[];
+    grouped[cn].push(it);
+  });
+  var html='';
+  Object.keys(grouped).forEach(function(cn){
+    html+='<p style="font-weight:600;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;color:var(--color-text-muted);margin:var(--space-3) 0 var(--space-2)">'+esc(cn)+'</p>';
+    grouped[cn].forEach(function(it){
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) 0;border-bottom:1px solid var(--color-border)">'
+        +'<span style="font-size:14px">'+esc(it.name)+'<span style="color:var(--color-text-muted);margin-left:8px">'+money(it.price_cents,cur)+'</span></span>'
+        +'<input type="number" min="0" value="0" data-iid="'+esc(it.id)+'" data-name="'+esc(it.name)+'" data-price="'+it.price_cents+'" aria-label="Qty for '+esc(it.name)+'" style="width:56px;text-align:center;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px" class="add-order-qty">'
+        +'</div>';
+    });
+  });
+  body.innerHTML = html || '<p style="padding:var(--space-4);color:var(--color-text-muted)">No menu items available.</p>';
+
+  $('#add-items-modal-confirm').onclick = async function(){
+    var adds = [];
+    $$('.add-order-qty', body).forEach(function(inp){
+      var q = parseInt(inp.value)||0;
+      if(q>0) adds.push({menu_item_id:null, name:inp.dataset.name, unit_price_cents:parseInt(inp.dataset.price), qty:q});
+    });
+    if(!adds.length){ toast('Select at least one item','err'); return; }
+    // get or create order
+    var oid = orderId;
+    if(!oid){
+      var tableId = billModalState.tableId;
+      if(!tableId){ toast('Cannot add items: no table linked','err'); return; }
+      var {error:startErr, session_id:sid, order_id:newOid} = await MESA.startTableOrder(state.rid, tableId);
+      if(startErr){ toast('Error starting order: '+startErr,'err'); return; }
+      oid = newOid;
+      billModalState.sessionId = sid || sessionId;
+    }
+    var {error:addErr} = await MESA.addOrderItems(oid, billModalState.sessionId, adds);
+    if(addErr){ toast('Error adding items','err'); return; }
+    modal.classList.remove('open');
+    toast('Items added','ok');
+    await renderBillModalBody();
+  };
+  $('#add-items-modal-cancel').onclick = function(){ modal.classList.remove('open'); };
+  $('#add-items-modal-close').onclick = function(){ modal.classList.remove('open'); };
+}
+
 $('#bill-modal-close').addEventListener('click', function(){ $('#bill-modal').classList.remove('open'); });
 $('#bill-modal').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
 
@@ -792,11 +1040,33 @@ function renderCatList(){
   if(!categories.length){ list.innerHTML='<p style="padding:var(--space-4);font-size:14px;color:var(--color-text-muted)">No categories yet</p>'; return; }
   list.innerHTML = categories.map(function(c){
     var count = menuItems.filter(function(i){ return i.category_id===c.id; }).length;
-    return '<div class="cat-item'+(state.currentCat===c.id?' active':'')+'" tabindex="0" role="button" data-cid="'+esc(c.id)+'">'+esc(c.name)+'<span class="cat-count">'+count+' items</span></div>';
+    return '<div class="cat-item'+(state.currentCat===c.id?' active':'')+'" tabindex="0" role="button" data-cid="'+esc(c.id)+'" style="justify-content:space-between">'
+      +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.name)+'</span>'
+      +'<span style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+        +'<span class="cat-count" style="margin-right:4px">'+count+'</span>'
+        +'<button class="icon-btn cat-edit-btn" data-cid="'+esc(c.id)+'" aria-label="Edit category '+esc(c.name)+'" style="width:28px;height:28px" title="Rename/delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+      +'</span>'
+      +'</div>';
   }).join('');
   $$('.cat-item').forEach(function(el){
-    el.addEventListener('click', function(){ selectCat(el.dataset.cid); });
-    el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectCat(el.dataset.cid); } });
+    el.addEventListener('click', function(e){
+      if(e.target.closest('.cat-edit-btn')) return;
+      selectCat(el.dataset.cid);
+    });
+    el.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectCat(el.dataset.cid); }
+    });
+  });
+  $$('.cat-edit-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cat = categories.find(function(c){ return c.id===btn.dataset.cid; });
+      if(!cat) return;
+      $('#cat-modal-id').value = cat.id;
+      $('#cat-modal-name').value = cat.name;
+      $('#cat-modal').classList.add('open');
+      setTimeout(function(){ $('#cat-modal-name').focus(); },50);
+    });
   });
 }
 async function selectCat(cid){
@@ -829,9 +1099,11 @@ function renderItemsTable(){
   // availability toggles
   $$('[data-iid]', wrap).forEach(function(inp){
     if(inp.type==='checkbox') inp.addEventListener('change', async function(){
-      await sb.from('mesa_menu_items').update({is_available:inp.checked}).eq('id', inp.dataset.iid);
+      var newVal = inp.checked;
+      var {error} = await sb.from('mesa_menu_items').update({is_available:newVal}).eq('id', inp.dataset.iid);
+      if(error){ toast('Failed to update availability','err'); inp.checked = !newVal; return; }
       var item = menuItems.find(function(i){ return i.id===inp.dataset.iid; });
-      if(item) item.is_available = inp.checked;
+      if(item) item.is_available = newVal;
     });
   });
   $$('.edit-item-btn', wrap).forEach(function(btn){
@@ -849,17 +1121,63 @@ function renderItemsTable(){
 }
 function renderItemsEmpty(){ $('#items-table-wrap').innerHTML='<div class="empty-state"><p class="empty-title">Select a category</p></div>'; }
 
-// add category
-$('#add-cat-btn').addEventListener('click', async function(){
-  var name = prompt('Category name:');
-  if(!name||!name.trim()) return;
-  var {data,error} = await sb.from('mesa_menu_categories').insert({restaurant_id:state.rid, name:name.trim(), sort:categories.length}).select('*').single();
-  if(error){ toast('Error adding category','err'); return; }
-  categories.push(data);
-  renderCatList();
-  selectCat(data.id);
-  toast('Category added','ok');
-});
+// category modal — wire once
+(function(){
+  function closeCatModal(){ $('#cat-modal').classList.remove('open'); }
+  $('#cat-modal-close').addEventListener('click', closeCatModal);
+  $('#cat-modal-cancel').addEventListener('click', closeCatModal);
+  $('#cat-modal').addEventListener('click', function(e){ if(e.target===this) closeCatModal(); });
+
+  $('#cat-modal-save').addEventListener('click', async function(){
+    var id = $('#cat-modal-id').value;
+    var name = $('#cat-modal-name').value.trim();
+    if(!name){ toast('Enter a category name','err'); return; }
+    if(!id){
+      // new
+      var {data,error} = await sb.from('mesa_menu_categories').insert({restaurant_id:state.rid, name:name, sort:categories.length}).select('*').single();
+      if(error){ toast('Error adding category','err'); return; }
+      categories.push(data);
+      renderCatList();
+      selectCat(data.id);
+      toast('Category added','ok');
+    } else {
+      // rename
+      var {error:upErr} = await sb.from('mesa_menu_categories').update({name:name}).eq('id',id);
+      if(upErr){ toast('Error renaming','err'); return; }
+      var cat = categories.find(function(c){ return c.id===id; });
+      if(cat) cat.name = name;
+      renderCatList();
+      toast('Category renamed','ok');
+    }
+    closeCatModal();
+  });
+
+  $('#cat-modal-delete').addEventListener('click', async function(){
+    var id = $('#cat-modal-id').value;
+    if(!id) return;
+    var cat = categories.find(function(c){ return c.id===id; });
+    var label = cat ? cat.name : 'this category';
+    if(!confirm('Delete "'+label+'"? All items in it will also be deleted.')) return;
+    var {error} = await sb.from('mesa_menu_categories').delete().eq('id',id);
+    if(error){ toast('Error deleting category','err'); return; }
+    categories = categories.filter(function(c){ return c.id!==id; });
+    menuItems = menuItems.filter(function(i){ return i.category_id!==id; });
+    if(state.currentCat===id) state.currentCat = null;
+    renderCatList();
+    if(categories.length) selectCat(categories[0].id);
+    else renderItemsEmpty();
+    closeCatModal();
+    toast('Category deleted','ok');
+  });
+
+  // add category opens modal with blank id
+  $('#add-cat-btn').addEventListener('click', function(){
+    $('#cat-modal-id').value = '';
+    $('#cat-modal-name').value = '';
+    $('#cat-modal').classList.add('open');
+    setTimeout(function(){ $('#cat-modal-name').focus(); },50);
+  });
+})();
 
 // add item btn
 $('#add-item-btn').addEventListener('click', function(){ openItemDrawer(null); });
@@ -873,10 +1191,60 @@ function openItemDrawer(itemId){
   $('#item-price').value = item ? (item.price_cents/100).toFixed(2) : '';
   $('#item-allergens').value = item ? (item.allergens||[]).join(', ') : '';
   $('#item-avail').checked = item ? item.is_available : true;
+  // photo fields
+  var photoUrl = item ? (item.photo_url||'') : '';
+  $('#item-photo-url').value = photoUrl;
+  $('#item-photo-paste-url').value = photoUrl;
+  $('#item-photo-file').value = '';
+  if(photoUrl){
+    $('#item-photo-preview').src = photoUrl;
+    $('#item-photo-preview-wrap').style.display = 'block';
+  } else {
+    $('#item-photo-preview-wrap').style.display = 'none';
+    $('#item-photo-preview').src = '';
+  }
   $('#item-drawer').classList.add('open');
   $('#item-drawer-overlay').classList.add('open');
   $('#item-name').focus();
 }
+
+// Photo file upload handler
+$('#item-photo-file').addEventListener('change', async function(){
+  var file = this.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast('Images only (jpg, png, webp…)','err'); this.value=''; return; }
+  if(file.size>5*1024*1024){ toast('Image must be under 5 MB','err'); this.value=''; return; }
+  var path = 'menu/'+state.rid+'/'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  var {error:upErr} = await MESA.sb.storage.from('mesa-media').upload(path, file, {upsert:true});
+  if(upErr){ toast('Upload failed: '+upErr.message,'err'); this.value=''; return; }
+  var url = MESA.sb.storage.from('mesa-media').getPublicUrl(path).data.publicUrl;
+  $('#item-photo-url').value = url;
+  $('#item-photo-paste-url').value = url;
+  $('#item-photo-preview').src = url;
+  $('#item-photo-preview-wrap').style.display = 'block';
+  toast('Photo uploaded','ok');
+});
+
+// Photo URL paste handler
+$('#item-photo-paste-url').addEventListener('input', function(){
+  var url = this.value.trim();
+  $('#item-photo-url').value = url;
+  if(url){
+    $('#item-photo-preview').src = url;
+    $('#item-photo-preview-wrap').style.display = 'block';
+  } else {
+    $('#item-photo-preview-wrap').style.display = 'none';
+  }
+});
+
+// Remove photo
+$('#item-photo-remove').addEventListener('click', function(){
+  $('#item-photo-url').value = '';
+  $('#item-photo-paste-url').value = '';
+  $('#item-photo-file').value = '';
+  $('#item-photo-preview').src = '';
+  $('#item-photo-preview-wrap').style.display = 'none';
+});
 function closeItemDrawer(){ $('#item-drawer').classList.remove('open'); $('#item-drawer-overlay').classList.remove('open'); }
 $('#item-drawer-close').addEventListener('click', closeItemDrawer);
 $('#item-cancel-btn').addEventListener('click', closeItemDrawer);
@@ -888,9 +1256,12 @@ $('#item-save-btn').addEventListener('click', async function(){
   var priceCents = Math.round(priceVal*100);
   var allergens = $('#item-allergens').value.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   var id = $('#item-id').value;
+  var photoUrlVal = $('#item-photo-url').value.trim() || null;
+  if(priceVal===0) toast('Warning: price is set to zero','warn');
   var payload = { restaurant_id:state.rid, category_id:state.currentCat, name:name,
     description:$('#item-desc').value.trim()||null, price_cents:priceCents,
-    allergens:allergens.length?allergens:null, is_available:$('#item-avail').checked };
+    allergens:allergens.length?allergens:null, is_available:$('#item-avail').checked,
+    photo_url:photoUrlVal };
   var {data,error} = id
     ? await sb.from('mesa_menu_items').update(payload).eq('id',id).select('*').single()
     : await sb.from('mesa_menu_items').insert(Object.assign({sort:menuItems.length},payload)).select('*').single();
@@ -920,7 +1291,8 @@ function renderTableGrid(){
       +'<div class="qr-img" id="qr-'+esc(t.id)+'"></div>'
       +'<p class="qr-code-text">'+esc(t.table_code)+'</p>'
       +'<div class="qr-actions">'
-      +'<button class="icon-btn" data-tid="'+esc(t.id)+'" data-url="'+esc(url)+'" aria-label="Print QR for '+esc(t.label)+'" title="Print" onclick="window.print()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>'
+      +'<button class="icon-btn edit-table-btn" data-tid="'+esc(t.id)+'" data-label="'+esc(t.label)+'" data-seats="'+esc(t.seats||4)+'" aria-label="Edit '+esc(t.label)+'" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+      +'<button class="icon-btn dl-qr-btn" data-tid="'+esc(t.id)+'" data-label="'+esc(t.label)+'" aria-label="Download QR for '+esc(t.label)+'" title="Download PNG"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>'
       +'<button class="icon-btn del-table-btn" data-tid="'+esc(t.id)+'" aria-label="Delete '+esc(t.label)+'" style="color:var(--color-destructive)" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
       +'</div></div>';
   }).join('');
@@ -940,7 +1312,49 @@ function renderTableGrid(){
       renderTableGrid(); toast('Table deleted','ok');
     });
   });
+  $$('.edit-table-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      $('#edit-table-id').value = btn.dataset.tid;
+      $('#edit-table-label').value = btn.dataset.label;
+      $('#edit-table-seats').value = btn.dataset.seats || 4;
+      $('#edit-table-modal').classList.add('open');
+      setTimeout(function(){ $('#edit-table-label').focus(); },50);
+    });
+  });
+  $$('.dl-qr-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = $('#qr-'+btn.dataset.tid);
+      if(!el) return;
+      var canvas = el.querySelector('canvas');
+      if(!canvas){ toast('QR not ready yet','err'); return; }
+      var a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = (btn.dataset.label||'qr').replace(/\s+/g,'-')+'.png';
+      a.click();
+    });
+  });
 }
+
+// wire edit-table modal once
+(function(){
+  function closeEditTable(){ $('#edit-table-modal').classList.remove('open'); }
+  $('#edit-table-modal-close').addEventListener('click', closeEditTable);
+  $('#edit-table-cancel').addEventListener('click', closeEditTable);
+  $('#edit-table-modal').addEventListener('click', function(e){ if(e.target===this) closeEditTable(); });
+  $('#edit-table-save').addEventListener('click', async function(){
+    var id = $('#edit-table-id').value;
+    var label = $('#edit-table-label').value.trim();
+    var seats = Math.max(1, parseInt($('#edit-table-seats').value)||4);
+    if(!label){ toast('Enter a table name','err'); return; }
+    var {error} = await sb.from('mesa_tables').update({label:label, seats:seats}).eq('id',id);
+    if(error){ toast('Error saving table','err'); return; }
+    var t = tables.find(function(x){ return x.id===id; });
+    if(t){ t.label=label; t.seats=seats; }
+    renderTableGrid();
+    closeEditTable();
+    toast('Table updated','ok');
+  });
+})();
 function genCode(){ return 'T-'+Math.random().toString(36).substr(2,5).toUpperCase(); }
 $('#add-table-btn').addEventListener('click', function(){ $('#table-modal').classList.add('open'); $('#table-label').value=''; $('#table-count').value='1'; setTimeout(function(){ $('#table-label').focus(); },50); });
 $('#table-modal-close').addEventListener('click', function(){ $('#table-modal').classList.remove('open'); });
@@ -950,11 +1364,13 @@ $('#print-all-btn').addEventListener('click', function(){ window.print(); });
 $('#table-save-btn').addEventListener('click', async function(){
   var labelBase = $('#table-label').value.trim();
   var count = Math.max(1,Math.min(50, parseInt($('#table-count').value)||1));
+  var seatsVal = Math.max(1,Math.min(50, parseInt($('#table-seats').value)||4));
   if(!labelBase){ toast('Enter a table name','err'); return; }
   var inserts=[];
   for(var i=0;i<count;i++){
     var label = count>1 ? labelBase+' '+(i+1) : labelBase;
-    inserts.push({restaurant_id:state.rid, label:label, table_code:genCode(), seats:4, is_active:true});
+    var code = genCode();
+    inserts.push({restaurant_id:state.rid, label:label, table_code:code, seats:seatsVal, is_active:true});
   }
   var {data,error} = await sb.from('mesa_tables').insert(inserts).select('*');
   if(error){ toast('Error adding tables','err'); return; }
@@ -997,8 +1413,8 @@ async function loadAnalytics(range){
     {label:'Total revenue',value:money(totalRev,cur),delta:''},
     {label:'Tips collected',value:money(totalTips,cur),delta:''},
     {label:'Average order',value:money(aov,cur),delta:''},
-    {label:'Tables served',value:String(pmts.length),delta:''},
-    {label:'Tip rate',value:totalRev>0?((totalTips/totalRev)*100).toFixed(1)+'%':'—',delta:''},
+    {label:'Payments received',value:String(pmts.length),delta:''},
+    {label:'Tip rate (of food)',value:(totalRev-totalTips)>0?((totalTips/(totalRev-totalTips))*100).toFixed(1)+'%':'—',delta:''},
     {label:'Loyalty members',value:String((loyalty||[]).length),delta:''}
   ].map(function(k){
     return '<div class="kpi-card"><p class="kpi-label">'+esc(k.label)+'</p><p class="kpi-value num">'+esc(k.value)+'</p>'+(k.delta?'<p class="kpi-delta neutral">'+esc(k.delta)+'</p>':'')+'</div>';
@@ -1015,8 +1431,8 @@ async function loadAnalytics(range){
     var rate=(s.rev-s.tips)>0?(s.tips/(s.rev-s.tips)*100):0;
     return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.sessions)+'</td><td class="num">'+money(s.tips,cur)+'</td><td>'+rate.toFixed(1)+'%</td></tr>';
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:var(--space-5)">No data for this period</td></tr>';
-  // top items (aggregate from order_items of completed sessions)
-  var {data:orderItems} = await sb.from('mesa_order_items').select('name,unit_price_cents,qty,mesa_sessions!inner(restaurant_id,status)').eq('mesa_sessions.restaurant_id',state.rid).in('mesa_sessions.status',['paid','closed']);
+  // top items — filtered by date range via session join
+  var {data:orderItems} = await sb.from('mesa_order_items').select('name,unit_price_cents,qty,mesa_sessions!inner(restaurant_id,status,created_at)').eq('mesa_sessions.restaurant_id',state.rid).in('mesa_sessions.status',['paid','closed']).gte('mesa_sessions.created_at',sinceISO);
   var itemMap={};
   (orderItems||[]).forEach(function(it){
     if(!itemMap[it.name]) itemMap[it.name]=0;
@@ -1060,7 +1476,10 @@ async function loadTeam(){
   $('#team-tbody').innerHTML = staffList.map(function(s){
     var td = tipMap[s.name]||{tips:0,sessions:0,rev:0};
     var avgPct = td.rev ? ((td.tips/td.rev)*100).toFixed(1)+'%' : '—';
-    return '<tr><td><div style="display:flex;align-items:center;gap:var(--space-2)"><div style="width:32px;height:32px;border-radius:50%;background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--color-primary);flex-shrink:0">'+(s.name||'?').charAt(0).toUpperCase()+'</div>'+esc(s.name)+'</div></td><td>'+td.sessions+'</td><td class="num">'+money(td.tips,cur)+'</td><td>'+avgPct+'</td><td><button class="icon-btn del-staff-btn" data-sid="'+esc(s.id)+'" aria-label="Remove '+esc(s.name)+'" style="color:var(--color-destructive)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></td></tr>';
+    return '<tr><td><div style="display:flex;align-items:center;gap:var(--space-2)"><div style="width:32px;height:32px;border-radius:50%;background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--color-primary);flex-shrink:0">'+(s.name||'?').charAt(0).toUpperCase()+'</div>'+esc(s.name)+'</div></td><td>'+td.sessions+'</td><td class="num">'+money(td.tips,cur)+'</td><td>'+avgPct+'</td><td style="white-space:nowrap">'
+      +'<button class="icon-btn edit-staff-btn" data-sid="'+esc(s.id)+'" data-name="'+esc(s.name)+'" data-role="'+esc(s.role||'server')+'" aria-label="Edit '+esc(s.name)+'" style="margin-right:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+      +'<button class="icon-btn del-staff-btn" data-sid="'+esc(s.id)+'" aria-label="Remove '+esc(s.name)+'" style="color:var(--color-destructive)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
+      +'</td></tr>';
   }).join('');
   $$('.del-staff-btn').forEach(function(btn){
     btn.addEventListener('click', async function(){
@@ -1070,8 +1489,25 @@ async function loadTeam(){
       loadTeam(); toast('Team member removed','ok');
     });
   });
+  $$('.edit-staff-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      $('#staff-id').value = btn.dataset.sid;
+      $('#staff-name').value = btn.dataset.name;
+      $('#staff-role').value = btn.dataset.role || 'server';
+      $('#staff-modal-title').textContent = 'Edit team member';
+      $('#staff-save-btn').textContent = 'Save changes';
+      $('#staff-modal').classList.add('open');
+      setTimeout(function(){ $('#staff-name').focus(); },50);
+    });
+  });
 }
-$('#add-staff-btn').addEventListener('click', function(){ $('#staff-id').value=''; $('#staff-name').value=''; $('#staff-role').value='server'; $('#staff-modal').classList.add('open'); setTimeout(function(){ $('#staff-name').focus(); },50); });
+$('#add-staff-btn').addEventListener('click', function(){
+  $('#staff-id').value=''; $('#staff-name').value=''; $('#staff-role').value='server';
+  $('#staff-modal-title').textContent='Add team member';
+  $('#staff-save-btn').textContent='Add to team';
+  $('#staff-modal').classList.add('open');
+  setTimeout(function(){ $('#staff-name').focus(); },50);
+});
 $('#staff-modal-close').addEventListener('click', function(){ $('#staff-modal').classList.remove('open'); });
 $('#staff-cancel-btn').addEventListener('click', function(){ $('#staff-modal').classList.remove('open'); });
 $('#staff-modal').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
@@ -1079,10 +1515,18 @@ $('#staff-save-btn').addEventListener('click', async function(){
   var name = $('#staff-name').value.trim();
   if(!name){ toast('Enter a name','err'); return; }
   var role = $('#staff-role').value;
-  var {error} = await sb.from('mesa_staff').insert({restaurant_id:state.rid, name:name, role:role, is_active:true});
-  if(error){ toast('Error adding staff','err'); return; }
-  $('#staff-modal').classList.remove('open');
-  loadTeam(); toast(name+' added to team','ok');
+  var id = $('#staff-id').value;
+  if(id){
+    var {error} = await sb.from('mesa_staff').update({name:name, role:role}).eq('id',id);
+    if(error){ toast('Error updating staff','err'); return; }
+    $('#staff-modal').classList.remove('open');
+    loadTeam(); toast('Team member updated','ok');
+  } else {
+    var {error:insErr} = await sb.from('mesa_staff').insert({restaurant_id:state.rid, name:name, role:role, is_active:true});
+    if(insErr){ toast('Error adding staff','err'); return; }
+    $('#staff-modal').classList.remove('open');
+    loadTeam(); toast(name+' added to team','ok');
+  }
 });
 
 /* -------- SETTINGS -------- */
@@ -1097,7 +1541,17 @@ function renderSettings(){
     +'<div class="settings-card">'
       +'<h2>Your brand</h2>'
       +'<div class="field"><label for="set-name">Restaurant name</label><input id="set-name" class="input" type="text" value="'+esc(rest.name||'')+'"></div>'
+      +'<div class="field"><label>Logo</label>'
+        +'<div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap">'
+          +'<img id="logo-preview" src="'+esc(rest.brand_logo_url||'')+'" alt="Logo preview" style="width:64px;height:64px;object-fit:contain;border:1px solid var(--color-border);border-radius:var(--radius-md);display:'+(rest.brand_logo_url?'block':'none')+'">'
+          +'<div style="display:flex;flex-direction:column;gap:var(--space-2);flex:1">'
+            +'<input id="set-logo-file" type="file" accept="image/*" class="input" style="padding:var(--space-2)">'
+            +'<input id="set-logo-url" class="input" type="url" placeholder="Or paste image URL…" value="'+esc(rest.brand_logo_url||'')+'">'
+          +'</div>'
+        +'</div>'
+      +'</div>'
       +'<div class="field"><label for="set-primary">Brand primary color</label><div style="display:flex;align-items:center;gap:var(--space-3)"><input id="set-primary" class="input" type="color" value="'+esc(rest.brand_primary||'#C4522A')+'" style="width:60px;height:48px;padding:4px;cursor:pointer"><input id="set-primary-hex" class="input" type="text" value="'+esc(rest.brand_primary||'#C4522A')+'" placeholder="#C4522A" style="width:120px"><div class="color-preview" id="brand-preview" style="background:'+esc(rest.brand_primary||'#C4522A')+'"></div></div></div>'
+      +'<div class="field"><label for="set-accent">Accent color</label><div style="display:flex;align-items:center;gap:var(--space-3)"><input id="set-accent" class="input" type="color" value="'+esc(rest.brand_accent||'#E8A040')+'" style="width:60px;height:48px;padding:4px;cursor:pointer"><div class="color-preview" style="background:'+esc(rest.brand_accent||'#E8A040')+'"></div></div></div>'
       +'<div id="contrast-warn" style="display:none;background:var(--color-warning-light);color:var(--color-warning-foreground);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:14px;margin-bottom:var(--space-4)">This color may be hard to read. Try a darker shade.</div>'
       +'<div style="display:flex;justify-content:flex-end;align-items:center;gap:var(--space-3)"><span id="brand-save-fb" class="save-feedback"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Saved</span><button class="btn btn-primary" id="save-brand-btn" style="border-radius:var(--radius-md)">Save changes</button></div>'
     +'</div>'
@@ -1126,26 +1580,46 @@ function renderSettings(){
   $('#set-primary').addEventListener('input', function(){ $('#set-primary-hex').value=this.value; syncColor(this.value); });
   $('#set-primary-hex').addEventListener('input', function(){ var h=this.value; if(/^#[0-9A-Fa-f]{6}$/.test(h)){ $('#set-primary').value=h; syncColor(h); } });
 
-  $('#save-brand-btn').addEventListener('click', async function(){
-    var payload = { name:$('#set-name').value.trim(), brand_primary:$('#set-primary').value };
-    var {error} = await sb.from('mesa_restaurants').update(payload).eq('id',state.rid);
-    if(error){ toast('Error saving','err'); return; }
-    Object.assign(state.restaurant, payload);
-    $('#sidebar-rest-name').textContent = payload.name || state.restaurant.name;
-    showFeedback('#brand-save-fb');
-  });
-  $('#save-pay-btn').addEventListener('click', async function(){
-    var payload = { currency:$('#set-currency').value, service_charge_pct:parseFloat($('#set-sc').value)||0 };
-    var {error} = await sb.from('mesa_restaurants').update(payload).eq('id',state.rid);
-    if(error){ toast('Error saving','err'); return; }
-    Object.assign(state.restaurant, payload); showFeedback('#pay-save-fb');
-  });
-  $('#save-tip-btn').addEventListener('click', async function(){
-    var presets = [0,1,2,3].map(function(i){ return parseInt($('#tip-preset-'+i).value)||0; });
-    var {error} = await sb.from('mesa_restaurants').update({tip_presets:presets}).eq('id',state.rid);
-    if(error){ toast('Error saving','err'); return; }
-    state.restaurant.tip_presets = presets; showFeedback('#tip-save-fb');
-  });
+  if(!state.settingsWired){
+    state.settingsWired = true;
+    $('#save-brand-btn').onclick = async function(){
+      var logoUrl = $('#set-logo-url').value.trim() || state.restaurant.brand_logo_url || null;
+      var accentVal = $('#set-accent').value || state.restaurant.brand_accent || null;
+      var payload = { name:$('#set-name').value.trim(), brand_primary:$('#set-primary').value, brand_logo_url:logoUrl, brand_accent:accentVal };
+      var {error} = await sb.from('mesa_restaurants').update(payload).eq('id',state.rid);
+      if(error){ toast('Error saving','err'); return; }
+      Object.assign(state.restaurant, payload);
+      $('#sidebar-rest-name').textContent = payload.name || state.restaurant.name;
+      showFeedback('#brand-save-fb');
+    };
+    $('#save-pay-btn').onclick = async function(){
+      var payload = { currency:$('#set-currency').value, service_charge_pct:parseFloat($('#set-sc').value)||0 };
+      var {error} = await sb.from('mesa_restaurants').update(payload).eq('id',state.rid);
+      if(error){ toast('Error saving','err'); return; }
+      Object.assign(state.restaurant, payload); showFeedback('#pay-save-fb');
+    };
+    $('#save-tip-btn').onclick = async function(){
+      var presets = Array.from($$('[id^="tip-preset-"]')).map(function(inp){ return parseInt(inp.value)||0; });
+      var {error} = await sb.from('mesa_restaurants').update({tip_presets:presets}).eq('id',state.rid);
+      if(error){ toast('Error saving','err'); return; }
+      state.restaurant.tip_presets = presets; showFeedback('#tip-save-fb');
+    };
+    // logo file upload
+    $('#set-logo-file').onchange = async function(){
+      var file = this.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){ toast('Images only','err'); this.value=''; return; }
+      if(file.size>5*1024*1024){ toast('Image must be under 5 MB','err'); this.value=''; return; }
+      var path = 'logos/'+state.rid+'-'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      var {error:upErr} = await MESA.sb.storage.from('mesa-media').upload(path, file, {upsert:true});
+      if(upErr){ toast('Upload failed: '+upErr.message,'err'); return; }
+      var url = MESA.sb.storage.from('mesa-media').getPublicUrl(path).data.publicUrl;
+      $('#set-logo-url').value = url;
+      $('#logo-preview').src = url;
+      $('#logo-preview').style.display = 'block';
+      toast('Logo uploaded','ok');
+    };
+  }
 }
 function showFeedback(sel){
   var el = $(sel);
@@ -1162,8 +1636,8 @@ function showOnboarding(){
 }
 function renderWizardStep(step){
   wizardStep = step;
-  $('#wizard-fill').style.width = (step/5*100)+'%';
-  $('#wizard-step-label').textContent = 'Step '+step+' of 5';
+  $('#wizard-fill').style.width = (step/4*100)+'%';
+  $('#wizard-step-label').textContent = 'Step '+step+' of 4';
   var content = $('#wizard-content');
   var steps = {
     1: '<h2 style="font-size:22px;font-weight:600;margin-bottom:var(--space-5)">Let\'s set up your restaurant</h2>'
@@ -1229,6 +1703,9 @@ document.addEventListener('keydown', function(e){
     $('#bill-modal').classList.remove('open');
     $('#table-modal').classList.remove('open');
     $('#staff-modal').classList.remove('open');
+    $('#cat-modal').classList.remove('open');
+    $('#add-items-modal').classList.remove('open');
+    $('#edit-table-modal').classList.remove('open');
     closeItemDrawer();
     closeSidebar();
   }
@@ -1236,6 +1713,9 @@ document.addEventListener('keydown', function(e){
 
 /* ---- boot ---- */
 (async function boot(){
+  // show a minimal loading state until we know auth status
+  $('#login-screen').style.display='none';
+  $('#app-shell').style.display='none';
   var {data:{session}} = await sb.auth.getSession();
   if(session){ await initApp(); }
   else { $('#login-screen').style.display='flex'; }
@@ -1243,7 +1723,5 @@ document.addEventListener('keydown', function(e){
 
 })();
 </script>
-</body>
-</html>
 </body>
 </html>

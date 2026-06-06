@@ -23,7 +23,7 @@
   }
 
   // ---- money ----
-  var CUR = { USD: '$', GBP: '£', EUR: '€', AED: 'AED ', SAR: 'SAR ' };
+  var CUR = { USD: '$', GBP: '£', EUR: '€', AED: 'AED ', SAR: 'SAR ', AUD: 'A$', CAD: 'C$' };
   function money(cents, currency) {
     var sym = CUR[currency || 'USD'] || (currency ? currency + ' ' : '$');
     var v = (Number(cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -93,6 +93,13 @@
       .eq('id', table.restaurant_id).maybeSingle();
     if (rRest.error) throw rRest.error;
     var rest = rRest.data;
+    if (rest) {
+      // Postgres numeric arrives as a string over JSON — normalize to a number so math never NaNs.
+      rest.service_charge_pct = parseFloat(rest.service_charge_pct) || 0;
+      if (typeof rest.tip_presets === 'string') {
+        try { rest.tip_presets = JSON.parse(rest.tip_presets); } catch (e) { rest.tip_presets = null; }
+      }
+    }
     var rSess = await sb.from('mesa_sessions')
       .select('id,status,party_size,server_staff_id,opened_at')
       .eq('table_id', table.id).neq('status', 'closed').order('opened_at', { ascending: false }).limit(1).maybeSingle();
@@ -119,17 +126,24 @@
     return { subtotal_cents: subtotal, service_cents: service, total_before_tip_cents: subtotal + service };
   }
 
+  // Claim/unclaim an item. Pass a label to claim, or null to release.
+  // Claiming is first-writer-wins: the UPDATE only matches if the row is still unclaimed,
+  // so two diners tapping the same item simultaneously can't both win.
+  // Returns { data, error }: data===null on a claim means someone else got it first.
   async function claimItem(itemId, label) {
-    return sb.from('mesa_order_items').update({ claimed_by: label }).eq('id', itemId);
+    var q = sb.from('mesa_order_items').update({ claimed_by: label }).eq('id', itemId);
+    if (label) q = q.is('claimed_by', null); // only claim if currently unclaimed
+    return q.select('id,claimed_by').maybeSingle();
   }
   async function insertPayment(p) {
     // p: { session_id, restaurant_id, payer_label, amount_cents, tip_cents, service_charge_cents, method }
-    var ins = await sb.from('mesa_payments').insert(Object.assign({ status: 'pending' }, p)).select('id').single();
-    if (ins.error) return ins;
-    return sb.from('mesa_payments').update({ status: 'succeeded' }).eq('id', ins.data.id).select('id').single();
+    // Single-step succeeded insert — avoids stranding a 'pending' row if a 2nd call fails.
+    return sb.from('mesa_payments').insert(Object.assign({ status: 'succeeded' }, p)).select('id').single();
   }
+  // Idempotent loyalty join: upserts by (restaurant_id, phone) and increments points/visits
+  // on a returning member. Backed by the mesa_loyalty_join RPC (handles the conflict atomically).
   async function joinLoyalty(restaurantId, phone, name) {
-    return sb.from('mesa_loyalty_members').insert({ restaurant_id: restaurantId, phone: phone, name: name || null, points: 10, visits: 1, last_visit: new Date().toISOString() });
+    return sb.rpc('mesa_loyalty_join', { p_restaurant: restaurantId, p_phone: phone, p_name: name || null });
   }
 
   // ---- Ordering (diner starts/extends a session on a table) ----
