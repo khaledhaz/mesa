@@ -491,6 +491,84 @@ body{background:var(--color-bg)}
 }
 .back-btn:hover{color:var(--color-text-primary)}
 
+/* ---- view menu link ---- */
+.view-menu-link{
+  display:flex;align-items:center;justify-content:center;gap:var(--space-2);
+  margin:0 var(--space-4) var(--space-3);
+  padding:var(--space-3) var(--space-4);
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md);
+  font-size:14px;font-weight:500;color:var(--color-text-secondary);
+  cursor:pointer;transition:background var(--duration-fast),border-color var(--duration-fast);
+  text-align:center;
+}
+.view-menu-link:hover{background:var(--color-surface-raised);border-color:var(--color-border-strong);color:var(--color-text-primary)}
+.view-menu-link:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+
+/* ---- menu screen ---- */
+#screen-menu{background:var(--color-bg);min-height:100dvh}
+.menu-cat-nav{
+  position:sticky;top:56px;z-index:90;
+  background:var(--color-surface);
+  border-bottom:1px solid var(--color-border);
+  padding:var(--space-2) var(--space-4);
+  display:flex;gap:var(--space-2);overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.menu-cat-nav::-webkit-scrollbar{display:none}
+.menu-cat-chip{
+  flex-shrink:0;
+  padding:var(--space-1) var(--space-3);
+  border-radius:var(--radius-full);
+  border:1.5px solid var(--color-border);
+  background:var(--color-surface);
+  font-size:13px;font-weight:500;color:var(--color-text-secondary);
+  cursor:pointer;white-space:nowrap;
+  transition:background var(--duration-fast),border-color var(--duration-fast),color var(--duration-fast);
+  min-height:44px;display:flex;align-items:center;
+}
+.menu-cat-chip:hover{background:var(--color-surface-raised);border-color:var(--color-border-strong);color:var(--color-text-primary)}
+.menu-cat-chip.active{background:var(--color-restaurant-accent);border-color:var(--color-restaurant-accent);color:var(--color-restaurant-accent-foreground)}
+.menu-cat-chip:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+.menu-scroll{padding-bottom:calc(var(--space-8) + env(safe-area-inset-bottom,0))}
+.menu-category-section{padding:var(--space-5) var(--space-4) 0}
+.menu-category-heading{
+  font-size:18px;font-weight:600;color:var(--color-text-primary);
+  margin-bottom:var(--space-3);
+  scroll-margin-top:calc(56px + 48px + var(--space-3));
+}
+.menu-items-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.menu-item{
+  display:flex;align-items:flex-start;gap:var(--space-3);
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md);
+  padding:var(--space-3) var(--space-4);
+  min-height:72px;
+}
+.menu-item__body{flex:1;min-width:0}
+.menu-item__name{font-size:15px;font-weight:500;color:var(--color-text-primary);line-height:1.4}
+.menu-item__desc{font-size:13px;color:var(--color-text-secondary);margin-top:2px;line-height:1.4}
+.menu-item__allergens{display:flex;flex-wrap:wrap;gap:var(--space-1);margin-top:var(--space-2)}
+.menu-item__price{
+  flex-shrink:0;
+  font-size:15px;font-weight:600;color:var(--color-text-primary);
+  font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:1px;
+}
+.menu-item__thumb{
+  flex-shrink:0;width:64px;height:64px;border-radius:var(--radius-sm);
+  object-fit:cover;background:var(--color-surface-raised);align-self:flex-start;
+}
+.menu-empty-state{
+  display:flex;flex-direction:column;align-items:center;
+  padding:var(--space-12) var(--space-6);text-align:center;gap:var(--space-3);
+}
+.menu-skeleton-cat{
+  height:28px;width:120px;border-radius:var(--radius-full);margin-bottom:var(--space-3);
+}
+.menu-skeleton-item{height:72px;border-radius:var(--radius-md);margin-bottom:var(--space-2)}
+
 /* screens visibility */
 .screen{display:none}
 .screen.active{display:block}
@@ -616,6 +694,11 @@ body{background:var(--color-bg)}
       <div id="bill-total" class="bill-header__total amount"></div>
       <div id="bill-summary-line" class="bill-header__summary"></div>
     </div>
+
+    <button id="btn-view-menu" class="view-menu-link" aria-label="View full restaurant menu">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      View menu
+    </button>
 
     <div id="presence-bar" class="presence-bar" aria-live="polite">
       <div class="presence-avatars" id="presence-avatars"></div>
@@ -768,6 +851,23 @@ body{background:var(--color-bg)}
     <button class="btn-secondary btn" id="btn-done">Done</button>
     <p id="success-timestamp" class="success-timestamp"></p>
     <p class="mesa-attribution">Powered by mesa</p>
+  </div>
+</div>
+
+<!-- ===== SCREEN: MENU ===== -->
+<div id="screen-menu" class="screen" role="main" aria-labelledby="menu-heading">
+  <div class="brand-strip">
+    <button class="back-btn" id="back-from-menu" aria-label="Back to bill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to bill
+    </button>
+    <div id="menu-logo" class="brand-strip__logo" style="position:absolute;left:50%;transform:translateX(-50%)"></div>
+    <div id="menu-table-label" class="brand-strip__table"></div>
+  </div>
+  <h1 id="menu-heading" class="sr-only">Menu</h1>
+  <nav id="menu-cat-nav" class="menu-cat-nav" aria-label="Menu categories" style="display:none"></nav>
+  <div id="menu-content" class="menu-scroll" aria-live="polite" aria-label="Menu items">
+    <!-- filled by JS -->
   </div>
 </div>
 
@@ -1446,8 +1546,249 @@ function spawnConfetti(){
   }
 }
 
+// ---- menu screen ----
+var _menuLoaded = false;
+
+function openMenuScreen(){
+  setBrandLogoEl($('#menu-logo'), state.restaurant);
+  var tl = $('#menu-table-label'); if(tl) tl.textContent = state.table ? state.table.label : '';
+  show('#screen-menu');
+  window.scrollTo(0,0);
+  if(!_menuLoaded){
+    loadMenuData();
+  }
+}
+
+function loadMenuData(){
+  var rid = state.restaurant && state.restaurant.id;
+  if(!rid){
+    renderMenuError('No restaurant found.');
+    return;
+  }
+  renderMenuSkeleton();
+  Promise.all([
+    MESA.sb.from('mesa_menu_categories')
+      .select('id,name,sort')
+      .eq('restaurant_id', rid)
+      .eq('is_active', true)
+      .order('sort'),
+    MESA.sb.from('mesa_menu_items')
+      .select('id,category_id,name,description,price_cents,photo_url,allergens,is_available,sort')
+      .eq('restaurant_id', rid)
+      .eq('is_available', true)
+      .order('sort')
+  ]).then(function(results){
+    var catRes = results[0], itemRes = results[1];
+    if(catRes.error){ renderMenuError('Could not load menu categories.'); return; }
+    if(itemRes.error){ renderMenuError('Could not load menu items.'); return; }
+    var categories = catRes.data || [];
+    var items = itemRes.data || [];
+    _menuLoaded = true;
+    renderMenu(categories, items);
+  }).catch(function(err){
+    console.error('[mesa] menu load error', err);
+    renderMenuError('Could not load the menu. Check your connection and try again.');
+  });
+}
+
+function renderMenuSkeleton(){
+  var nav = $('#menu-cat-nav');
+  if(nav){
+    nav.style.display = '';
+    nav.innerHTML = [80,60,90,70].map(function(w){
+      return '<div class="skeleton menu-skeleton-cat" style="width:'+w+'px" aria-hidden="true"></div>';
+    }).join('');
+  }
+  var content = $('#menu-content');
+  if(content){
+    content.setAttribute('aria-busy','true');
+    var html = '';
+    for(var s=0;s<2;s++){
+      html += '<div class="menu-category-section">';
+      html += '<div class="skeleton menu-skeleton-cat" style="width:120px" aria-hidden="true"></div>';
+      html += '<div class="menu-items-list">';
+      for(var r=0;r<3;r++) html += '<div class="skeleton menu-skeleton-item" aria-hidden="true"></div>';
+      html += '</div></div>';
+    }
+    content.innerHTML = html;
+  }
+}
+
+function renderMenuError(msg){
+  var nav = $('#menu-cat-nav'); if(nav) nav.style.display = 'none';
+  var content = $('#menu-content');
+  if(content){
+    content.removeAttribute('aria-busy');
+    content.innerHTML = '<div class="menu-empty-state" role="alert">'
+      + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-destructive)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+      + '<p style="font-size:17px;font-weight:600;color:var(--color-text-primary)">Could not load menu</p>'
+      + '<p style="font-size:14px;color:var(--color-text-secondary)">' + MESA.esc(msg) + '</p>'
+      + '<button class="btn-pay" id="menu-retry-btn" style="margin-top:8px;border-radius:var(--radius-full);min-height:48px;padding:0 24px">Try again</button>'
+      + '</div>';
+    MESA.toast('Could not load menu — check your connection', 'err');
+    var retryBtn = content.querySelector('#menu-retry-btn');
+    if(retryBtn) retryBtn.addEventListener('click', function(){ _menuLoaded=false; loadMenuData(); });
+  }
+}
+
+function renderMenu(categories, items){
+  var nav = $('#menu-cat-nav');
+  var content = $('#menu-content');
+  var cur = state.restaurant ? state.restaurant.currency : 'GBP';
+  var restName = state.restaurant ? state.restaurant.name : '';
+
+  // group items by category_id
+  var itemsBycat = {};
+  items.forEach(function(it){
+    if(!itemsBycat[it.category_id]) itemsBycat[it.category_id] = [];
+    itemsBycat[it.category_id].push(it);
+  });
+
+  // filter to categories that have visible items
+  var activeCats = categories.filter(function(c){ return (itemsBycat[c.id]||[]).length > 0; });
+
+  // empty state
+  if(activeCats.length === 0){
+    if(nav) nav.style.display = 'none';
+    if(content){
+      content.removeAttribute('aria-busy');
+      content.innerHTML = '<div class="menu-empty-state">'
+        + '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>'
+        + '<p style="font-size:18px;font-weight:600;color:var(--color-text-primary)">Menu coming soon</p>'
+        + '<p style="font-size:14px;color:var(--color-text-secondary)">The restaurant hasn\'t added any menu items yet. Ask your server for today\'s options.</p>'
+        + '</div>';
+    }
+    return;
+  }
+
+  // build category nav chips
+  if(nav){
+    nav.style.display = '';
+    nav.innerHTML = '';
+    activeCats.forEach(function(cat, idx){
+      var chip = document.createElement('button');
+      chip.className = 'menu-cat-chip' + (idx===0 ? ' active' : '');
+      chip.textContent = cat.name;
+      chip.setAttribute('data-cat-id', cat.id);
+      chip.setAttribute('aria-label', 'Jump to ' + cat.name + ' section');
+      chip.addEventListener('click', function(){
+        // scroll to section
+        var sec = document.getElementById('menu-section-' + cat.id);
+        if(sec){
+          sec.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      });
+      nav.appendChild(chip);
+    });
+    // highlight active chip on scroll
+    attachNavScrollSpy(activeCats);
+  }
+
+  // update static sr-only heading with restaurant name
+  var menuH1 = document.getElementById('menu-heading');
+  if(menuH1) menuH1.textContent = (restName ? restName + ' — ' : '') + 'Menu';
+
+  // build content
+  if(content){
+    content.removeAttribute('aria-busy');
+    content.innerHTML = '';
+
+    activeCats.forEach(function(cat){
+      var catItems = itemsBycat[cat.id] || [];
+      var section = document.createElement('section');
+      section.id = 'menu-section-' + cat.id;
+      section.className = 'menu-category-section';
+      section.setAttribute('aria-labelledby', 'menu-cat-heading-' + cat.id);
+
+      var catHeading = document.createElement('h2');
+      catHeading.id = 'menu-cat-heading-' + cat.id;
+      catHeading.className = 'menu-category-heading';
+      catHeading.textContent = cat.name;
+      section.appendChild(catHeading);
+
+      var list = document.createElement('ul');
+      list.className = 'menu-items-list';
+      list.setAttribute('role','list');
+
+      catItems.forEach(function(item){
+        var li = document.createElement('li');
+        li.className = 'menu-item';
+        li.setAttribute('role','listitem');
+
+        // thumbnail
+        var thumbHtml = '';
+        if(item.photo_url){
+          thumbHtml = '<img class="menu-item__thumb" src="'+MESA.esc(item.photo_url)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+        }
+
+        // allergens
+        var allergenHtml = '';
+        if(item.allergens && item.allergens.length){
+          var allergenList = Array.isArray(item.allergens) ? item.allergens : [item.allergens];
+          if(allergenList.length){
+            allergenHtml = '<div class="menu-item__allergens" aria-label="Allergens: '+allergenList.map(function(a){return MESA.esc(a)}).join(', ')+'">';
+            allergenList.forEach(function(a){
+              allergenHtml += '<span class="badge badge-neutral">'+MESA.esc(a)+'</span>';
+            });
+            allergenHtml += '</div>';
+          }
+        }
+
+        var descHtml = item.description
+          ? '<p class="menu-item__desc">'+MESA.esc(item.description)+'</p>'
+          : '';
+
+        li.innerHTML = '<div class="menu-item__body">'
+          + '<div class="menu-item__name">'+MESA.esc(item.name)+'</div>'
+          + descHtml
+          + allergenHtml
+          + '</div>'
+          + '<div class="menu-item__price amount">'+m(item.price_cents, cur)+'</div>'
+          + thumbHtml;
+
+        list.appendChild(li);
+      });
+
+      section.appendChild(list);
+      content.appendChild(section);
+    });
+  }
+}
+
+function attachNavScrollSpy(activeCats){
+  if(!activeCats.length) return;
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        var catId = entry.target.id.replace('menu-section-','');
+        $$('.menu-cat-chip').forEach(function(chip){
+          var isActive = chip.getAttribute('data-cat-id') === catId;
+          chip.classList.toggle('active', isActive);
+          chip.setAttribute('aria-current', isActive ? 'true' : 'false');
+          if(isActive){
+            chip.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'});
+          }
+        });
+      }
+    });
+  },{rootMargin:'-56px 0px -60% 0px', threshold:0});
+
+  activeCats.forEach(function(cat){
+    var sec = document.getElementById('menu-section-' + cat.id);
+    if(sec) observer.observe(sec);
+  });
+}
+
 // ---- wire up events ----
 function init(){
+  // bill → view menu
+  var bvm = $('#btn-view-menu');
+  if(bvm) bvm.addEventListener('click', openMenuScreen);
+
+  // back from menu
+  var bfm = $('#back-from-menu');
+  if(bfm) bfm.addEventListener('click', function(){ show('#screen-bill'); });
+
   // bill → split sheet
   var bhp = $('#btn-how-pay');
   if(bhp) bhp.addEventListener('click', openSplitSheet);
